@@ -1,24 +1,30 @@
-import { Schema, model, models } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const PurchaseSchema = new Schema({
-  itemName: { type: String, required: true },
-  qty: { type: Number, required: true },
-  rate: { type: Number, required: true },
-  total: { type: Number, required: true },
-});
+export interface IBill extends Document {
+  billNo: string; // ✅ added bill number
+  customerId: mongoose.Types.ObjectId;
+  items: { name: string; qty: number; rate: number; total: number }[];
+  grandTotal: number;
+  deleted: boolean;
+}
 
-const BillSchema = new Schema(
+const BillSchema: Schema = new Schema(
   {
-    customerName: { type: String, required: true },
-    customerType: { type: String, required: true },
-    city: { type: String, required: true },
-    mobile: { type: String, required: true },
-    purchases: [PurchaseSchema],
+    billNo: { type: String, required: true, unique: true }, // ✅ hidden bill number
+    customerId: { type: Schema.Types.ObjectId, ref: "Customer", required: true },
+    items: [
+      {
+        name: { type: String, required: true },
+        qty: { type: Number, required: true },
+        rate: { type: Number, required: true },
+        total: { type: Number, required: true },
+      },
+    ],
     grandTotal: { type: Number, required: true },
-    createdAt: { type: Date, default: Date.now },
+     deleted: { type: Boolean, default: false }, // 🔹 soft delete flag
   },
   { timestamps: true }
 );
 
-const Bill = models.Bill || model("Bill", BillSchema);
-export default Bill;
+export default mongoose.models.Bill ||
+  mongoose.model<IBill>("Bill", BillSchema);
