@@ -7,8 +7,8 @@ export default function Splash() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push("/home"); // redirect to Home Page
-    }, 3000); // 3 seconds
+      router.push("/home"); // Go to Home after 3s
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [router]);
@@ -16,7 +16,7 @@ export default function Splash() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-blue-600">
       <img
-        src="/logo.png" // make sure your logo is in public/logo.png
+        src="/logo.png" // put logo.png inside public/
         alt="App Logo"
         className="w-32 h-32 animate-bounce"
       />
