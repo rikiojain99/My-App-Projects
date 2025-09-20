@@ -9,7 +9,7 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false); // hide splash after 3s
-    }, 3000);
+    }, 1200);
 
     return () => clearTimeout(timer);
   }, []);
