@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Bill from "@/models/Bill";
 import Customer from "@/models/Customer";
+import Item from "@/models/Item";
 
 const DELETE_PASSCODE = process.env.DELETE_PASSCODE || "1234"; 
+
+// ✅ Create Bill
 export async function POST(req: Request) {
   try {
     await dbConnect();
     const { mobile, items, grandTotal, billNo } = await req.json();
 
-    // find customer by mobile
+    // 1. Find customer
     const customer = await Customer.findOne({ mobile });
     if (!customer) {
       return NextResponse.json(
@@ -18,11 +21,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // create bill
-    const bill = await Bill.create({
+    // 2. Ensure items exist in DB
+    const billItems = [];
+    for (const it of items) {
+      let existing = await Item.findOne({ name: it.name });
+      if (!existing) {
+        existing = await Item.create({ name: it.name, rate: it.rate });
+      }
+      billItems.push({
+        itemId: existing._id,
+        qty: it.qty,
+        rate: it.rate,
+        total: it.total,
+      });
+    }
+
+    // 3. Create Bill
+  const bill = await Bill.create({
       billNo,
       customerId: customer._id,
-      items,
+      items: items.map((i: any) => ({
+        name: i.name,
+        qty: i.qty,
+        rate: i.rate,
+        total: i.total,
+      })),
       grandTotal,
     });
 
@@ -32,7 +55,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 400 });
   }
 }
-// GET bills with pagination
+
+// ✅ Get Bills (with customer + items populated)
 export async function GET(req: Request) {
   await dbConnect();
 
@@ -43,6 +67,7 @@ export async function GET(req: Request) {
 
   const bills = await Bill.find({})
     .populate("customerId")
+    .populate("items.itemId")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -57,12 +82,11 @@ export async function GET(req: Request) {
   });
 }
 
-// PUT update bill + customer
+// ✅ Update Bill + Customer
 export async function PUT(req: Request) {
   await dbConnect();
   const data = await req.json();
 
-  // Restore bill from trash
   if (data.restore && data.billId) {
     const bill = await Bill.findByIdAndUpdate(
       data.billId,
@@ -73,13 +97,12 @@ export async function PUT(req: Request) {
     return NextResponse.json({ success: true, bill });
   }
 
-  // Update bill + customer
   try {
     const { billId, updates, customerUpdates } = data;
 
     const updatedBill = await Bill.findByIdAndUpdate(billId, updates, {
       new: true,
-    }).populate("customerId");
+    }).populate("customerId items.itemId");
 
     if (!updatedBill) {
       return NextResponse.json({ error: "Bill not found" }, { status: 404 });
@@ -89,7 +112,10 @@ export async function PUT(req: Request) {
       await Customer.findByIdAndUpdate(updatedBill.customerId, customerUpdates);
     }
 
-    const refreshedBill = await Bill.findById(updatedBill._id).populate("customerId");
+    const refreshedBill = await Bill.findById(updatedBill._id)
+      .populate("customerId")
+      .populate("items.itemId");
+
     return NextResponse.json(refreshedBill, { status: 200 });
   } catch (err: any) {
     console.error("Bill update failed:", err.message);
@@ -97,7 +123,7 @@ export async function PUT(req: Request) {
   }
 }
 
-// Soft delete (move to trash)
+// ✅ Soft Delete
 export async function DELETE(req: Request) {
   await dbConnect();
   const { billId, passcode } = await req.json();
@@ -106,9 +132,12 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Invalid passcode" }, { status: 403 });
   }
 
-  const bill = await Bill.findByIdAndUpdate(billId, { deleted: true }, { new: true });
+  const bill = await Bill.findByIdAndUpdate(
+    billId,
+    { deleted: true },
+    { new: true }
+  );
   if (!bill) return NextResponse.json({ error: "Bill not found" }, { status: 404 });
 
   return NextResponse.json({ success: true, bill });
 }
-
