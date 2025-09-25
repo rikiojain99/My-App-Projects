@@ -54,7 +54,7 @@ export default function AddBill() {
   };
 
   return (
-    <div className="p-5 m-8 max-w-md bg-amber-50 mx-auto">
+    <div className="p-5 m-8 max-w-md bg-amber-50 mx-auto text-blue">
       <h1 className="text-xl font-bold mb-4 text-black">Add Bill</h1>
       {message && <p className="mb-4 text-green-600">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
