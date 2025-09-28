@@ -1,33 +1,54 @@
 "use client";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Globe from "../public/globe.svg";
+import { useAuth } from "@/components/AuthProvider";
+import { useState, useEffect } from "react";
+
 export default function Home() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true); // splash state
+  const { authenticated, role, login, logout } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [passkey, setPasskey] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false); // hide splash after 3s
-    }, 1000);
-
+    const timer = setTimeout(() => setLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
   if (loading) {
-    // Splash screen
     return (
-      <div className="flex items-center justify-center min-h-screen ">
-        <img
-          src="globe.svg"
-          alt="App Logo"
-          className="w-32 h-32 animate-bounce"
-        />
+      <div className="flex items-center justify-center min-h-screen">
+        <img src="globe.svg" alt="App Logo" className="w-32 h-32 animate-bounce" />
       </div>
     );
   }
 
-  // Main Home page after splash
+  if (!authenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+        <h1 className="text-2xl font-bold mb-4 text-black">Enter Passkey</h1>
+        <input
+          type="password"
+          value={passkey}
+          onChange={(e) => setPasskey(e.target.value)}
+          className="w-full max-w-md p-3 border rounded-xl shadow-md mb-4"
+          placeholder="Enter your passkey"
+        />
+        <button
+          onClick={async () => {
+            const success = await login(passkey);
+            if (!success) setError("Invalid passkey");
+          }}
+          className="w-full max-w-md py-3 bg-blue-500 text-white rounded-xl font-bold hover:opacity-90"
+        >
+          Login
+        </button>
+        {error && <p className="text-red-500 mt-2">{error}</p>}
+      </div>
+    );
+  }
+
+  // ✅ After login → Show options
   const buttons = [
     { name: "Add Bill", link: "/add-bill", color: "bg-green-500" },
     { name: "View Bills", link: "/view-bills", color: "bg-blue-500" },
@@ -36,7 +57,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-4 text-black">Welcome</h1>
+      <h1 className="text-2xl font-bold mb-4 text-black">Welcome ({role})</h1>
       {buttons.map((btn) => (
         <button
           key={btn.name}
@@ -46,6 +67,13 @@ export default function Home() {
           {btn.name}
         </button>
       ))}
+      <button
+        onClick={logout}
+        className="w-full max-w-md py-3 bg-red-500 text-white rounded-xl font-bold mt-4"
+      >
+        Logout
+      </button>
     </div>
   );
 }
+  

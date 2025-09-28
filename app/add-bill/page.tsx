@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from "react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 type Customer = { name: string; type: string; city: string; mobile: string };
 type Item = { name: string; qty: number; rate: number; total: number };
@@ -54,7 +55,8 @@ export default function AddBill() {
   };
 
   return (
-    <div className="p-5 m-8 max-w-md bg-amber-700 mx-auto text-black ">
+    <ProtectedRoute>
+<div className="p-5 m-8 max-w-md bg-amber-700 mx-auto text-black ">
       <h1 className="text-xl font-bold mb-4 text-black">Add Bill</h1>
       {message && <p className="mb-4 text-green-600">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,6 +90,8 @@ export default function AddBill() {
         <button type="submit" className="w-full py-2 px-4 bg-blue-500 text-white font-bold rounded">Save Bill</button>
       </form>
     </div>
+    </ProtectedRoute>
+    
   );
 }
 
