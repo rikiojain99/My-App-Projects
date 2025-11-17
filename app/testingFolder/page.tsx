@@ -210,25 +210,24 @@ function ItemNameInput({
   const [cachedResults, setCachedResults] = useState<ItemType[]>([]);
   const lastAPILength = useRef(0);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
-    if (query.length < 3) {
-      setSuggestions([]);
-      return;
+  if (query.length < 3) {
+    setSuggestions([]);
+    return;
+  }
+  if (debounceRef.current) clearTimeout(debounceRef.current);
+  debounceRef.current = setTimeout(async () => {
+    const diff = query.length - lastAPILength.current;
+    if (lastAPILength.current === 0 && query.length === 3) await fetchItems(query);
+    else if (diff >= 3) await fetchItems(query);
+    else setSuggestions(cachedResults.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())));
+  }, 300);
+  return () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    debounceRef.current = setTimeout(async () => {
-      const diff = query.length - lastAPILength.current;
-
-      if (lastAPILength.current === 0 && query.length === 3) await fetchItems(query);
-      else if (diff >= 3) await fetchItems(query);
-      else setSuggestions(cachedResults.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())));
-    }, 300);
-
-    return () => debounceRef.current && clearTimeout(debounceRef.current);
-  }, [query]);
+  };
+}, [query]);
 
   const fetchItems = async (search: string) => {
     try {

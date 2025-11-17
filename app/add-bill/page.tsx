@@ -210,7 +210,6 @@ function ItemNameInput({
   const [cachedResults, setCachedResults] = useState<ItemType[]>([]);
   const lastAPILength = useRef(0);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
   if (query.length < 3) {
     setSuggestions([]);
