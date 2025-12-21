@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef, useEffect, forwardRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 type Customer = { name: string; type: string; city: string; mobile: string };
@@ -13,7 +13,6 @@ export default function AddBill() {
   const [billNo] = useState(`BILL-${Date.now()}`);
   const grandTotal = useMemo(() => items.reduce((sum, i) => sum + i.total, 0), [items]);
   const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({ 1: true, 2: true });
-  const itemRefs = useRef<(HTMLInputElement | null)[]>([]); // Array of refs for item inputs
 
   const handleCustomerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,16 +54,7 @@ export default function AddBill() {
     setItems(newItems);
   };
 
-  const addItem = () => {
-    const newItems = [...items, { name: "", qty: 1, rate: 0, total: 0 }];
-    setItems(newItems);
-    // Focus on the newly added item's name input after state update
-    setTimeout(() => {
-      const lastIndex = newItems.length - 1;
-      itemRefs.current[lastIndex]?.focus();
-    }, 0);
-  };
-
+  const addItem = () => setItems([...items, { name: "", qty: 1, rate: 0, total: 0 }]);
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,10 +147,10 @@ export default function AddBill() {
               <div className="overflow-x-auto border">
                 {items.map((item, index) => (
                   <div key={index} className="grid grid-cols-5 gap-0 text-black">
+
                     {/* FIXED: Item Name input now stays INSIDE grid */}
                     <div className="p-0">
                       <ItemNameInput
-                        ref={(el) => { itemRefs.current[index] = el; }} // Fixed: Void callback for ref assignment
                         index={index}
                         items={items}
                         handleItemChange={handleItemChange}
@@ -171,7 +161,7 @@ export default function AddBill() {
 
                     <input type="number" name="rate" value={item.rate} onChange={(e) => handleItemChange(index, e)} className="border text-center" min={0} />
 
-                    <span className="text-center border pt-1 ">{item.total}</span>
+                    <span className="text-center border">{item.total}</span>
 
                     {items.length > 1 && (
                       <button type="button" className="text-red-500 border" onClick={() => removeItem(index)}>
@@ -206,34 +196,38 @@ export default function AddBill() {
 /* ----------------------------------------------------------
    ITEM NAME WITH DROPDOWN SUGGESTIONS (unchanged logic)
 ----------------------------------------------------------- */
-const ItemNameInput = forwardRef<HTMLInputElement, {
+function ItemNameInput({
+  index,
+  items,
+  handleItemChange,
+}: {
   index: number;
   items: Item[];
   handleItemChange: (index: number, e: React.ChangeEvent<HTMLInputElement>) => void;
-}>(({ index, items, handleItemChange }, ref) => {
+}) {
   const [query, setQuery] = useState(items[index].name);
   const [suggestions, setSuggestions] = useState<ItemType[]>([]);
   const [cachedResults, setCachedResults] = useState<ItemType[]>([]);
   const lastAPILength = useRef(0);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (query.length < 3) {
-      setSuggestions([]);
-      return () => {}; // No-op cleanup to ensure consistent return type
+  if (query.length < 3) {
+    setSuggestions([]);
+    return;
+  }
+  if (debounceRef.current) clearTimeout(debounceRef.current);
+  debounceRef.current = setTimeout(async () => {
+    const diff = query.length - lastAPILength.current;
+    if (lastAPILength.current === 0 && query.length === 3) await fetchItems(query);
+    else if (diff >= 3) await fetchItems(query);
+    else setSuggestions(cachedResults.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())));
+  }, 300);
+  return () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      const diff = query.length - lastAPILength.current;
-      if (lastAPILength.current === 0 && query.length === 3) await fetchItems(query);
-      else if (diff >= 3) await fetchItems(query);
-      else setSuggestions(cachedResults.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())));
-    }, 300);
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, [query]);
+  };
+}, [query]);
 
   const fetchItems = async (search: string) => {
     try {
@@ -258,7 +252,6 @@ const ItemNameInput = forwardRef<HTMLInputElement, {
   return (
     <div className="relative">
       <input
-        ref={ref} // Forward the ref to the input
         type="text"
         name="name"
         value={query}
@@ -285,4 +278,4 @@ const ItemNameInput = forwardRef<HTMLInputElement, {
       )}
     </div>
   );
-});
+}

@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { useState, useEffect,useRef  } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const router = useRouter();
@@ -9,32 +9,37 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [passkey, setPasskey] = useState("");
   const [error, setError] = useState("");
- const inputRef = useRef<HTMLInputElement>(null); // Reference for the input
+  const inputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Explicitly prevent any form submission/reload
-    console.log("Form submitted, passkey:", passkey); // Debug log
+    e.preventDefault();
+
     try {
       const success = await login(passkey);
       if (success) {
-        console.log("Login successful, clearing input"); // Debug log
-        setPasskey(""); // Only clear on success
-        setError(""); // Clear any previous error
+        setPasskey("");
+        setError("");
+
+        // ✅ redirect back to last page
+        const redirect =
+          sessionStorage.getItem("redirectAfterLogin") || "/";
+        sessionStorage.removeItem("redirectAfterLogin");
+        router.replace(redirect);
       } else {
-        console.log("Login failed, keeping input"); // Debug log
         setError("Invalid passkey");
-        setPasskey(""); // Only clear on success
+        setPasskey("");
       }
     } catch (err) {
-      console.error("Error during login:", err); // Debug log
       setError("An error occurred. Please try again.");
     }
   };
-useEffect(() => {
+
+  useEffect(() => {
     if (!authenticated && !loading && inputRef.current) {
       inputRef.current.focus();
     }
@@ -52,10 +57,12 @@ useEffect(() => {
     return (
       <div className="flex min-h-screen min-w-fit flex-col justify-center bg-gray-50 px-6 py-12 lg:px-8">
         <div className="flex flex-col items-center justify-center m-24 bg-gray-100 p-16 rounded-2xl">
-          <h1 className="text-2xl font-bold mb-4 text-black">Enter Passkey</h1>
+          <h1 className="text-2xl font-bold mb-4 text-black">
+            Enter Passkey
+          </h1>
           <form onSubmit={handleSubmit}>
             <input
-            ref={inputRef} 
+              ref={inputRef}
               type="password"
               value={passkey}
               onChange={(e) => setPasskey(e.target.value)}
@@ -76,22 +83,24 @@ useEffect(() => {
     );
   }
 
-  // ✅ After login → Show options
   const buttons = [
     { name: "Add Bill", link: "/add-bill", color: "bg-green-500" },
     { name: "View Bills", link: "/view-bills", color: "bg-blue-500" },
     { name: "Check Balance", link: "/check-balance", color: "bg-yellow-500" },
-    { name: "Testing pages ", link: "./testingFolder", color: "bg-yellow-500" },
+    { name: "Testing pages", link: "/testingFolder", color: "bg-yellow-500" },
   ];
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-4 text-black">Welcome ({role})</h1>
+      <h1 className="text-2xl font-bold mb-4 text-black">
+        Welcome ({role})
+      </h1>
+
       {buttons.map((btn) => (
         <button
           key={btn.name}
           onClick={() => router.push(btn.link)}
-          className={`w-full max-w-md py-4 text-white font-bold  gap-3 border-2 text-lg rounded-xl shadow-md ${btn.color} hover:opacity-90 transition`}
+          className={`w-full max-w-md py-4 text-white font-bold gap-3 border-2 text-lg rounded-xl shadow-md ${btn.color} hover:opacity-90 transition`}
         >
           {btn.name}
         </button>

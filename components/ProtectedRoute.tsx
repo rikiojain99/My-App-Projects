@@ -1,21 +1,26 @@
 "use client";
 import { useAuth } from "@/components/AuthProvider";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export default function ProtectedRoute({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { authenticated } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!authenticated) {
-      router.replace("/"); // redirect to home/login if not authenticated
+      // ✅ save where user was
+      sessionStorage.setItem("redirectAfterLogin", pathname);
+      router.replace("/");
     }
-  }, [authenticated, router]);
+  }, [authenticated, pathname, router]);
 
-  if (!authenticated) {
-    return null; // optional: show spinner
-  }
+  if (!authenticated) return null;
 
   return <>{children}</>;
 }
