@@ -86,6 +86,7 @@ export default function Home() {
   const buttons = [
     { name: "Add Bill", link: "/add-bill", color: "bg-green-500" },
     { name: "View Bills", link: "/view-bills", color: "bg-blue-500" },
+    { name: "Inventry", link: "/view-inventry", color: "bg-blue-500" },
     { name: "Check Balance", link: "/check-balance", color: "bg-yellow-500" },
     { name: "Testing pages", link: "/testingFolder", color: "bg-yellow-500" },
   ];
