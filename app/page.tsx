@@ -18,48 +18,36 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     try {
       const success = await login(passkey);
       if (success) {
         setPasskey("");
         setError("");
-
-        // ✅ redirect back to last page
-        const redirect =
-          sessionStorage.getItem("redirectAfterLogin") || "/";
+        const redirect = sessionStorage.getItem("redirectAfterLogin") || "/";
         sessionStorage.removeItem("redirectAfterLogin");
         router.replace(redirect);
-      } else {
-        setError("Invalid passkey");
-        setPasskey("");
-      }
-    } catch (err) {
+      } else setError("Invalid passkey");
+    } catch {
       setError("An error occurred. Please try again.");
     }
   };
 
   useEffect(() => {
-    if (!authenticated && !loading && inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (!authenticated && !loading && inputRef.current) inputRef.current.focus();
   }, [authenticated, loading]);
 
-  if (loading) {
+  if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen">
         <img src="globe.svg" alt="App Logo" className="w-32 h-32 animate-bounce" />
       </div>
     );
-  }
 
-  if (!authenticated) {
+  if (!authenticated)
     return (
-      <div className="flex min-h-screen min-w-fit flex-col justify-center bg-gray-50 px-6 py-12 lg:px-8">
-        <div className="flex flex-col items-center justify-center m-24 bg-gray-100 p-16 rounded-2xl">
-          <h1 className="text-2xl font-bold mb-4 text-black">
-            Enter Passkey
-          </h1>
+      <div className="flex min-h-screen flex-col justify-center bg-gray-50 px-6 py-12">
+        <div className="flex flex-col items-center m-24 bg-gray-100 p-16 rounded-2xl">
+          <h1 className="text-2xl font-bold mb-4 text-black">Enter Passkey</h1>
           <form onSubmit={handleSubmit}>
             <input
               ref={inputRef}
@@ -81,30 +69,47 @@ export default function Home() {
         </div>
       </div>
     );
-  }
 
-  const buttons = [
-    { name: "Add Bill", link: "/add-bill", color: "bg-green-500" },
-    { name: "View Bills", link: "/view-bills", color: "bg-blue-500" },
-    { name: "Inventry", link: "/view-inventry", color: "bg-blue-500" },
-    { name: "Check Balance", link: "/check-balance", color: "bg-yellow-500" },
-    { name: "Testing pages", link: "/testingFolder", color: "bg-yellow-500" },
+  // ✅ Modules definition
+  const modules = [
+    {
+      title: "Bills",
+      items: [
+        { name: "Add Bill", link: "/bills/add-bill", color: "bg-green-500" },
+        { name: "View Bills", link: "/bills/view-bills", color: "bg-blue-500" },
+        { name: "Check Balance", link: "/bills/check-balance", color: "bg-yellow-500" },
+      ],
+    },
+    {
+      title: "Inventory",
+      items: [
+        { name: "View Inventory", link: "/inventory/view-inventry", color: "bg-blue-500" },
+        { name: "Add Inventory", link: "/inventory/add-inventry", color: "bg-green-500" },
+      ],
+    },
+    {
+      title: "Other",
+      items: [{ name: "Testing pages", link: "/testingFolder", color: "bg-yellow-500" }],
+    },
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-4 text-black">
-        Welcome ({role})
-      </h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 space-y-8">
+      <h1 className="text-2xl font-bold mb-4 text-black">Welcome ({role})</h1>
 
-      {buttons.map((btn) => (
-        <button
-          key={btn.name}
-          onClick={() => router.push(btn.link)}
-          className={`w-full max-w-md py-4 text-white font-bold gap-3 border-2 text-lg rounded-xl shadow-md ${btn.color} hover:opacity-90 transition`}
-        >
-          {btn.name}
-        </button>
+      {modules.map((mod) => (
+        <div key={mod.title} className="w-full max-w-md p-4 bg-white rounded-xl shadow-md space-y-2">
+          <h2 className="text-lg font-bold text-black mb-2">{mod.title}</h2>
+          {mod.items.map((btn) => (
+            <button
+              key={btn.name}
+              onClick={() => router.push(btn.link)}
+              className={`w-full py-3 text-white font-bold text-lg rounded-xl shadow-md ${btn.color} hover:opacity-90`}
+            >
+              {btn.name}
+            </button>
+          ))}
+        </div>
       ))}
 
       <button

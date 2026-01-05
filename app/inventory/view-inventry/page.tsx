@@ -1,7 +1,9 @@
 "use client";
+
 import { useEffect, useState, useMemo } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
+// Inventory item interface
 interface InventryItem {
   _id: string;
   shop: number;
@@ -16,17 +18,19 @@ export default function ViewInventry() {
   const [inventry, setInventry] = useState<InventryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterShop, setFilterShop] = useState<string>("all");
+  const [filterName, setFilterName] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
 
-  // Fetch inventory data
+  // Fetch inventory data from API
   useEffect(() => {
     const fetchInventry = async () => {
       try {
-        const res = await fetch("/api/inventry");
+        const res = await fetch("/api/inventry"); // make sure this API returns the collection "inventry"
         if (res.ok) {
           const data: InventryItem[] = await res.json();
           setInventry(data);
+        } else {
+          console.error("Failed to fetch inventory:", res.status);
         }
       } catch (err) {
         console.error("Error fetching inventry:", err);
@@ -37,19 +41,22 @@ export default function ViewInventry() {
     fetchInventry();
   }, []);
 
-  // Filtered results
+  // Filtered inventory based on search, name, and type
   const filteredInventry = useMemo(() => {
     return inventry.filter((item) => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
-      const matchesShop = filterShop === "all" || item.shop.toString() === filterShop;
-      const matchesType = filterType === "all" || item.type === filterType;
-      return matchesSearch && matchesShop && matchesType;
-    });
-  }, [inventry, search, filterShop, filterType]);
+      const itemName = (item.name || "").toLowerCase();
+      const searchLower = search.toLowerCase();
+      const matchesSearch = itemName.includes(searchLower);
+      const matchesName = filterName === "all" || itemName === filterName.toLowerCase();
+      const matchesType = filterType === "all" || (item.type || "") === filterType;
 
-  // Unique shops and types for filter dropdowns
-  const shops = Array.from(new Set(inventry.map((i) => i.shop.toString())));
-  const types = Array.from(new Set(inventry.map((i) => i.type)));
+      return matchesSearch && matchesName && matchesType;
+    });
+  }, [inventry, search, filterName, filterType]);
+
+  // Unique names and types for dropdowns
+  const names = Array.from(new Set(inventry.map((i) => (i.name || "").toLowerCase())));
+  const types = Array.from(new Set(inventry.map((i) => i.type || "")));
 
   if (loading) {
     return (
@@ -73,18 +80,20 @@ export default function ViewInventry() {
             onChange={(e) => setSearch(e.target.value)}
             className="p-2 border rounded flex-1 text-black"
           />
+
           <select
-            value={filterShop}
-            onChange={(e) => setFilterShop(e.target.value)}
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
             className="p-2 border rounded"
           >
-            <option value="all">All Shops</option>
-            {shops.map((shop) => (
-              <option key={shop} value={shop}>
-                Shop {shop}
+            <option value="all">All Items</option>
+            {names.map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>
+
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -125,7 +134,7 @@ export default function ViewInventry() {
                     <td className="border px-2 py-1">{item.cty}</td>
                     <td className="border px-2 py-1 text-center">{item.qty}</td>
                     <td className="border px-2 py-1 text-center">{item.rate}</td>
-                    <td className="border px-2 py-1 text-center">{item.qty * item.rate}</td>
+                    <td className="border px-2 py-1 text-center">{(item.qty || 0) * (item.rate || 0)} </td>
                   </tr>
                 ))}
               </tbody>
