@@ -77,14 +77,14 @@ export default function Home() {
       items: [
         { name: "Add Bill", link: "/bills/add-bill", color: "bg-green-500" },
         { name: "View Bills", link: "/bills/view-bills", color: "bg-blue-500" },
-        { name: "Check Balance", link: "/bills/check-balance", color: "bg-yellow-500" },
+        // { name: "Check Balance", link: "/bills/check-balance", color: "bg-yellow-500" },
       ],
     },
     {
       title: "Inventory",
       items: [
-        { name: "View Inventory", link: "/inventory/view-inventry", color: "bg-blue-500" },
-        { name: "Add Inventory", link: "/inventory/add-inventry", color: "bg-green-500" },
+        // { name: "View Inventory", link: "/inventory/view-inventry", color: "bg-blue-500" },
+        // { name: "Add Inventory", link: "/inventory/add-inventry", color: "bg-green-500" },
         
         { name: "View Stock", link: "/inventory/stockView", color: "bg-blue-500" },
         { name: "Add Stock", link: "/inventory/add-stoock", color: "bg-green-500" },
