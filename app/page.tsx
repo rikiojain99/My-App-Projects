@@ -85,6 +85,9 @@ export default function Home() {
       items: [
         { name: "View Inventory", link: "/inventory/view-inventry", color: "bg-blue-500" },
         { name: "Add Inventory", link: "/inventory/add-inventry", color: "bg-green-500" },
+        
+        { name: "View Stock", link: "/inventory/stockView", color: "bg-blue-500" },
+        { name: "Add Stock", link: "/inventory/add-stoock", color: "bg-green-500" },
       ],
     },
     {

@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IBill extends Document {
-  billNo: string;
-  customerId: mongoose.Types.ObjectId;
+export interface IStock extends Document {
+  vendorName: string;
+  purchaseDate: Date;
   items: {
     name: string;
     qty: number;
@@ -10,17 +10,12 @@ export interface IBill extends Document {
     total: number;
   }[];
   grandTotal: number;
-  deleted: boolean;
 }
 
-const BillSchema: Schema = new Schema(
+const StockSchema: Schema = new Schema(
   {
-    billNo: { type: String, required: true, unique: true },
-    customerId: {
-      type: Schema.Types.ObjectId,
-      ref: "Customer",
-      required: true,
-    },
+    vendorName: { type: String, required: true },
+    purchaseDate: { type: Date, required: true },
     items: [
       {
         name: { type: String, required: true },
@@ -30,10 +25,10 @@ const BillSchema: Schema = new Schema(
       },
     ],
     grandTotal: { type: Number, required: true },
-    deleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Bill ||
-  mongoose.model<IBill>("Bill", BillSchema);
+export default mongoose.models.Stock ||
+  mongoose.model<IStock>("Stock", StockSchema);
+    
