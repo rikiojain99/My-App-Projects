@@ -1,47 +1,57 @@
-import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
+import { NextRequest, NextResponse } from "next/server";
 import Inventry from "@/models/Inventry";
+import connectDB from "@/lib/mongodb";
 
-export async function GET(req: Request) {
-  await dbConnect();
+export async function POST(req: NextRequest) {
   try {
-    const items = await Inventry.find().sort({ name: 1 });
-    return NextResponse.json(items);
-  } catch (err: any) {
-    console.error("Fetch inventry failed:", err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
+    await connectDB();
+    const body = await req.json();
+    const { name, type, category, qty, rate, shop } = body;
 
-export async function POST(req: Request) {
-  await dbConnect();
-
-  try {
-    const data = await req.json();
-    const { name, type, cty, qty, rate, shop } = data;
-
-    if (!name || !qty || !rate || !shop) {
+    if (!name || !qty || !shop) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { ok: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    let existing = await Inventry.findOne({ name, shop });
+    const existing = await Inventry.findOne({ name, shop });
+    let item;
 
     if (existing) {
-      existing.qty += qty;
-      if (type) existing.type = type;
-      if (cty) existing.cty = cty;
-      if (rate) existing.rate = rate;
-      await existing.save();
-      return NextResponse.json({ ok: true, item: existing });
+      existing.qty += Number(qty);
+      existing.rate = Number(rate); // update rate if needed
+      item = await existing.save();
+    } else {
+      item = await Inventry.create({
+        name,
+        type,
+        category,
+        qty: Number(qty),
+        rate: Number(rate),
+        shop,
+      });
     }
 
-    const newItem = await Inventry.create({ name, type, cty, qty, rate, shop });
-    return NextResponse.json({ ok: true, item: newItem });
-  } catch (err: any) {
-    console.error("Inventry add/update failed:", err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ ok: true, item }, { status: 200 });
+  } catch (err) {
+    console.error("Inventry add/update failed:", err);
+    return NextResponse.json(
+      { ok: false, error: (err as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    await connectDB();
+    const { search } = Object.fromEntries(req.nextUrl.searchParams.entries());
+    const items = search
+      ? await Inventry.find({ name: { $regex: search, $options: "i" } })
+      : await Inventry.find();
+    return NextResponse.json(items);
+  } catch (err) {
+    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 500 });
   }
 }

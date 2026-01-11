@@ -1,132 +1,137 @@
 "use client";
-import { useState } from "react";
 
-type InventryItem = {
-  name: string;
-  type: string;
-  cty: string;
-  qty: number;
-  rate: number;
-  shop?: number; // optional in frontend, default will be added
-};
+import { useState, useRef, useEffect } from "react";
 
-export default function AddInventry() {
-  const [item, setItem] = useState<InventryItem>({
-    name: "",
-    type: "",
-    cty: "",
-    qty: 1,
-    rate: 0,
-  });
+type ItemType = { _id: string; name: string };
+type ShopType = 1 | 2 | 3; // Shop1=1, Home=2, Shop2=3
+
+export default function AddInventory() {
+  const [shop, setShop] = useState<ShopType>(1);
+  const [name, setName] = useState("");
+  const [type, setType] = useState("");
+  const [category, setCategory] = useState("");
+  const [qty, setQty] = useState(1);
+  const [rate, setRate] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [suggestions, setSuggestions] = useState<ItemType[]>([]);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setItem({
-      ...item,
-      [name]: name === "qty" || name === "rate" ? Number(value) : value,
-    });
+  // Calculate total
+  useEffect(() => {
+    setTotal(qty * rate);
+  }, [qty, rate]);
+
+  // Fetch smart item suggestions
+  useEffect(() => {
+    if (name.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/inventry?search=${name}`);
+        if (res.ok) {
+          const data: ItemType[] = await res.json();
+          setSuggestions(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [name]);
+
+  const handleSelectSuggestion = (item: ItemType) => {
+    setName(item.name);
+    setSuggestions([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
-    setLoading(true);
-
     try {
-      // Always add shop = 1
-      const payload = { ...item, shop: 1 };
-
       const res = await fetch("/api/inventry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ name, type, category, qty, rate, shop }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
+      if (!res.ok || !data.ok) {
         setMessage(`❌ ${data.error || "Failed to save item"}`);
       } else {
         setMessage(`✅ Item saved! Current qty: ${data.item.qty}`);
-        setItem({ name: "", type: "", cty: "", qty: 1, rate: 0 });
+        setName("");
+        setType("");
+        setCategory("");
+        setQty(1);
+        setRate(0);
       }
     } catch (err) {
       console.error(err);
       setMessage("❌ Something went wrong");
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto bg-white rounded-lg shadow-md">
-      <h1 className="text-xl font-bold mb-4 text-black">Add Inventory Item</h1>
-      {message && (
-        <p
-          className={`mb-4 ${
-            message.includes("❌") ? "text-red-500" : "text-green-600"
-          }`}
-        >
-          {message}
-        </p>
-      )}
+    <div className="p-4 text-black max-w-md mx-auto bg-white rounded-lg shadow-md">
+      <h1 className="text-xl font-bold mb-4">Add / Update Inventory</h1>
+
+      {/* Shop Selection */}
+      <div className="flex gap-4 mb-3">
+        <label>
+          <input type="radio" name="shop" value={1} checked={shop === 1} onChange={() => setShop(1)} /> Shop1
+        </label>
+        <label>
+          <input type="radio" name="shop" value={2} checked={shop === 2} onChange={() => setShop(2)} /> Home
+        </label>
+        <label>
+          <input type="radio" name="shop" value={3} checked={shop === 3} onChange={() => setShop(3)} /> Shop2
+        </label>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          type="text"
-          name="name"
-          placeholder="Item Name"
-          value={item.name}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-          required
-        />
-        <input
-          type="text"
-          name="type"
-          placeholder="Type"
-          value={item.type}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-        />
-        <input
-          type="text"
-          name="cty"
-          placeholder="Category"
-          value={item.cty}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-        />
-        <input
-          type="number"
-          name="qty"
-          placeholder="Quantity"
-          value={item.qty}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-          min={1}
-          required
-        />
-        <input
-          type="number"
-          name="rate"
-          placeholder="Rate"
-          value={item.rate}
-          onChange={handleChange}
-          className="w-full p-2 border rounded text-black"
-          min={0}
-          required
-        />
-        <button
-          type="submit"
-          className="w-full py-2 px-4 bg-green-500 text-white font-bold rounded hover:opacity-90"
-          disabled={loading}
-        >
-          {loading ? "Saving..." : "Add Item"}
+        {/* Item Name with suggestions */}
+        <div className="relative">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Item Name"
+            className="w-full p-2 border rounded"
+            required
+          />
+          {suggestions.length > 0 && (
+            <ul className="absolute z-10 bg-white border rounded shadow-md w-full max-h-32 overflow-y-auto">
+              {suggestions.map((item) => (
+                <li
+                  key={item._id}
+                  className="px-2 py-1 cursor-pointer hover:bg-blue-100"
+                  onClick={() => handleSelectSuggestion(item)}
+                >
+                  {item.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <input type="text" placeholder="Type" value={type} onChange={(e) => setType(e.target.value)} className="w-full p-2 border rounded" />
+        <input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-2 border rounded" />
+        <input type="number" placeholder="Qty" value={qty} onChange={(e) => setQty(Number(e.target.value))} min={1} className="w-full p-2 border rounded" required />
+        <input type="number" placeholder="Rate" value={rate} onChange={(e) => setRate(Number(e.target.value))} min={0} className="w-full p-2 border rounded" required />
+
+        <div className="font-bold text-black">Total: {total}</div>
+
+        <button type="submit" className="w-full py-2 px-4 bg-green-500 text-white font-bold rounded hover:opacity-90">
+          Save Item
         </button>
       </form>
+
+      {message && <p className={`mt-2 ${message.includes("❌") ? "text-red-500" : "text-green-600"}`}>{message}</p>}
     </div>
   );
 }
