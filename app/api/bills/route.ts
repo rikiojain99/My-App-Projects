@@ -8,7 +8,7 @@ import ItemStock from "@/models/ItemStock";
 const DELETE_PASSCODE = process.env.DELETE_PASSCODE || "1234";
 
 /* =====================================================
-   CREATE BILL (DEDUCT STOCK)
+   CREATE BILL (ALLOW NEW ITEMS + SAFE STOCK DEDUCTION)
 ===================================================== */
 export async function POST(req: Request) {
   try {
@@ -24,10 +24,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Ensure enough stock BEFORE deduction
+    // 2. Ensure Item + ItemStock exist (PASSIVE CREATION)
+    for (const it of items) {
+      // Item list (for suggestions)
+      await Item.updateOne(
+        { name: it.name },
+        { $setOnInsert: { name: it.name } },
+        { upsert: true }
+      );
+
+      // Stock entry (0 qty if new)
+      let stock = await ItemStock.findOne({ itemName: it.name });
+      if (!stock) {
+        await ItemStock.create({
+          itemName: it.name,
+          availableQty: 0,
+        });
+      }
+    }
+
+    // 3. Block ONLY when real stock exists but insufficient
     for (const it of items) {
       const stock = await ItemStock.findOne({ itemName: it.name });
-      if (!stock || stock.availableQty < it.qty) {
+
+      if (
+        stock &&
+        stock.availableQty > 0 &&
+        stock.availableQty < it.qty
+      ) {
         return NextResponse.json(
           { error: `Insufficient stock for ${it.name}` },
           { status: 400 }
@@ -35,24 +59,19 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Deduct stock
+    // 4. Deduct stock ONLY if availableQty > 0
     for (const it of items) {
-      await ItemStock.findOneAndUpdate(
-        { itemName: it.name },
-        {
-          $inc: { availableQty: -it.qty },
-          $set: { lastUpdated: new Date() },
-        }
-      );
-    }
+      const stock = await ItemStock.findOne({ itemName: it.name });
 
-    // 4. Ensure item names exist (for suggestions)
-    for (const it of items) {
-      await Item.updateOne(
-        { name: it.name },
-        { $setOnInsert: { name: it.name } },
-        { upsert: true }
-      );
+      if (stock && stock.availableQty > 0) {
+        await ItemStock.findOneAndUpdate(
+          { itemName: it.name },
+          {
+            $inc: { availableQty: -it.qty },
+            $set: { lastUpdated: new Date() },
+          }
+        );
+      }
     }
 
     // 5. Create bill
@@ -102,6 +121,7 @@ export async function GET(req: Request) {
   });
 }
 
+
 /* =====================================================
    UPDATE BILL (RESTORE → DEDUCT)
 ===================================================== */
@@ -116,10 +136,17 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Bill not found" }, { status: 404 });
     }
 
-    // Deduct stock again
     for (const it of bill.items) {
-      const stock = await ItemStock.findOne({ itemName: it.name });
-      if (!stock || stock.availableQty < it.qty) {
+      let stock = await ItemStock.findOne({ itemName: it.name });
+
+      if (!stock) {
+        stock = await ItemStock.create({
+          itemName: it.name,
+          availableQty: 0,
+        });
+      }
+
+      if (stock.availableQty < it.qty) {
         return NextResponse.json(
           { error: `Insufficient stock for ${it.name}` },
           { status: 400 }
@@ -157,10 +184,17 @@ export async function PUT(req: Request) {
       );
     }
 
-    // 2. Check new stock availability
+    // 2. Ensure stock exists for new items
     for (const it of updates.items) {
-      const stock = await ItemStock.findOne({ itemName: it.name });
-      if (!stock || stock.availableQty < it.qty) {
+      let stock = await ItemStock.findOne({ itemName: it.name });
+      if (!stock) {
+        stock = await ItemStock.create({
+          itemName: it.name,
+          availableQty: 0,
+        });
+      }
+
+      if (stock.availableQty < it.qty) {
         return NextResponse.json(
           { error: `Insufficient stock for ${it.name}` },
           { status: 400 }
@@ -213,7 +247,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Bill not found" }, { status: 404 });
   }
 
-  // Restore stock
   for (const it of bill.items) {
     await ItemStock.findOneAndUpdate(
       { itemName: it.name },

@@ -1,28 +1,82 @@
 @import "tailwindcss";
 
-:root {  
-    --background: 240 20% 98%;
-  --foreground: #171717;
+/* ================= ROOT VARIABLES ================= */
+:root {
+  /* Light mode */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(223, 17%, 92%);
+  --muted: hsl(210 40% 96%);
+  --border: hsl(214 32% 91%);
+  --primary: hsl(221 83% 53%);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* ================= DARK MODE ================= */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: 240 20% 98%;
-    --foreground: #ededed;
+    --background: hsl(222, 17%, 89%);
+    --foreground: hsl(0, 48%, 5%);
+    --muted: hsl(217 33% 17%);
+    --border: hsl(218, 36%, 10%);
+    --primary: hsl(217 91% 60%);
   }
 }
 
+/* ================= BASE STYLES ================= */
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-    font-style: black;
+  height: 100%;
+}
 
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ================= COMMON ELEMENTS ================= */
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+p {
+  color: var(--foreground);
+}
+
+input,
+textarea,
+select {
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: hsl(215 20% 65%);
+}
+
+button {
+  font-weight: 500;
+}
+
+/* ================= UTILITIES ================= */
+.border-default {
+  border-color: var(--border);
+}
+
+.bg-muted {
+  background-color: var(--muted);
+}
+
+.text-primary {
+  color: var(--primary);
 }
