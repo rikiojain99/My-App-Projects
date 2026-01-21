@@ -255,7 +255,7 @@ export default function Home() {
           onClick={logout}
           className="w-full py-3 bg-red-500 text-white rounded-xl font-bold"
         >
-          Logout
+          Logout...
         </button>
       </div>
     </div>
