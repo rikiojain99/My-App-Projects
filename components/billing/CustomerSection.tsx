@@ -24,7 +24,7 @@ export default function CustomerSection({
   setCustomer,
   expanded,
   toggle,
-  autoCollapseDelay = 3000,
+  autoCollapseDelay = 1500,
 }: Props) {
   const collapseTimer = useRef<NodeJS.Timeout | null>(null);
 

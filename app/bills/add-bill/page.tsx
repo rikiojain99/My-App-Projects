@@ -2,13 +2,9 @@
 
 import { useState, useMemo, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-
-import CustomerSection, {
-  Customer,
-} from "@/components/billing/CustomerSection";
+import CustomerSection, { Customer } from "@/components/billing/CustomerSection";
 import ItemsTable from "@/components/billing/ItemsTable";
 
-/* ================= TYPES ================= */
 type Item = {
   name: string;
   qty: number;
@@ -16,9 +12,10 @@ type Item = {
   total: number;
 };
 
-/* ================= ADD BILL PAGE ================= */
+type PaymentMode = "cash" | "upi" | "split";
+
 export default function AddBill() {
-  /* ---------- STATE ---------- */
+  /* ---------------- STATE ---------------- */
   const [customer, setCustomer] = useState<Customer>({
     name: "",
     type: "",
@@ -30,22 +27,52 @@ export default function AddBill() {
     { name: "", qty: 1, rate: 0, total: 0 },
   ]);
 
-  const [message, setMessage] = useState("");
   const [billNo] = useState(`BILL-${Date.now()}`);
+  const [message, setMessage] = useState("");
 
-  const [expanded, setExpanded] = useState<{ [k: number]: boolean }>({
-    1: true, // customer
-    2: true, // items
-  });
-
+  const [expanded, setExpanded] = useState({ 1: true, 2: true });
   const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  /* ---------------- PAYMENT ---------------- */
+  const [showPayment, setShowPayment] = useState(false);
+  const [discount, setDiscount] = useState(0);
+
+  const [paymentMode, setPaymentMode] =
+    useState<PaymentMode>("cash");
+
+  const [cashAmount, setCashAmount] = useState(0);
+  const [upiAmount, setUpiAmount] = useState(0);
+  const [upiId, setUpiId] = useState("");
+
+  /* ---------------- TOTALS ---------------- */
   const grandTotal = useMemo(
-    () => items.reduce((sum, i) => sum + i.total, 0),
+    () => items.reduce((s, i) => s + i.total, 0),
     [items]
   );
 
-  /* ---------- ITEMS LOGIC ---------- */
+  const finalTotal = useMemo(
+    () => Math.max(grandTotal - discount, 0),
+    [grandTotal, discount]
+  );
+
+  /* ---------------- AUTO SPLIT LOGIC ---------------- */
+  useMemo(() => {
+    if (paymentMode === "cash") {
+      setCashAmount(finalTotal);
+      setUpiAmount(0);
+    }
+
+    if (paymentMode === "upi") {
+      setCashAmount(0);
+      setUpiAmount(finalTotal);
+    }
+
+    if (paymentMode === "split") {
+      setUpiAmount(Math.max(finalTotal - cashAmount, 0));
+    }
+  }, [paymentMode, cashAmount, finalTotal]);
+
+  /* ---------------- ITEMS LOGIC ---------------- */
   const handleItemChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement>
@@ -64,43 +91,43 @@ export default function AddBill() {
   };
 
   const addItem = () => {
-    const newItems = [
-      ...items,
-      { name: "", qty: 1, rate: 0, total: 0 },
-    ];
-    setItems(newItems);
-
+    setItems([...items, { name: "", qty: 1, rate: 0, total: 0 }]);
     setTimeout(() => {
-      itemRefs.current[newItems.length - 1]?.focus();
+      itemRefs.current[itemRefs.current.length - 1]?.focus();
     }, 0);
   };
 
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
+  const removeItem = (i: number) =>
+    setItems(items.filter((_, idx) => idx !== i));
 
-  /* ---------- SUBMIT ---------- */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage("");
+  /* ---------------- FINAL SAVE ---------------- */
+  const saveBill = async () => {
+    if (cashAmount + upiAmount !== finalTotal) {
+      setMessage("❌ Payment total mismatch");
+      return;
+    }
 
     try {
-      // Save / update customer
       await fetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(customer),
       });
 
-      // Save bill
       const res = await fetch("/api/bills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          billNo,
           mobile: customer.mobile,
           items,
           grandTotal,
-          billNo,
+          discount,
+          finalTotal,
+          paymentMode,
+          cashAmount,
+          upiAmount,
+          upiId: paymentMode !== "cash" ? upiId : null,
         }),
       });
 
@@ -111,56 +138,29 @@ export default function AddBill() {
       }
 
       setMessage("✅ Bill saved successfully");
+      setShowPayment(false);
 
-      // Reset
       setCustomer({ name: "", type: "", city: "", mobile: "" });
       setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
-      setExpanded({ 1: true, 2: true });
+      setDiscount(0);
+      setCashAmount(0);
+      setUpiAmount(0);
+      setUpiId("");
     } catch {
       setMessage("❌ Something went wrong");
     }
   };
 
-  /* ---------- UI ---------- */
+  /* ---------------- UI ---------------- */
   return (
     <ProtectedRoute>
-      <form
-        onSubmit={handleSubmit}
-        className="
-          max-w-5xl mx-auto
-          bg-white
-          rounded-xl
-          shadow-md
-          border
-          border-default
-          p-4 md:p-8
-          space-y-6
-        "
-      >
-        {/* TITLE */}
-        <div>
-          <h1 className="text-2xl font-semibold text-black">
-            Add Bill
-          </h1>
-          <p className="text-sm text-gray-500">
-            Create a new customer bill
-          </p>
-        </div>
+      <div className="max-w-5xl mx-auto bg-white border rounded-xl p-4 space-y-6">
+        <h1 className="text-2xl font-bold text-black">
+          Add Bill
+        </h1>
 
-        {/* MESSAGE */}
-        {message && (
-          <div
-            className={`p-3 rounded-md text-sm ${
-              message.startsWith("❌")
-                ? "bg-red-50 text-red-700 border border-red-200"
-                : "bg-green-50 text-green-700 border border-green-200"
-            }`}
-          >
-            {message}
-          </div>
-        )}
+        {message && <p className="text-sm">{message}</p>}
 
-        {/* ================= CUSTOMER ================= */}
         <CustomerSection
           customer={customer}
           setCustomer={setCustomer}
@@ -170,7 +170,6 @@ export default function AddBill() {
           }
         />
 
-        {/* ================= ITEMS ================= */}
         <ItemsTable
           items={items}
           expanded={expanded[2]}
@@ -183,33 +182,101 @@ export default function AddBill() {
           onRemoveItem={removeItem}
         />
 
-        {/* ================= GRAND TOTAL ================= */}
-        <div className="flex justify-between items-center bg-gray-50 border border-default rounded-lg p-4">
-          <span className="text-lg font-semibold text-black">
-            Grand Total
-          </span>
-          <span className="text-xl font-bold text-blue-600">
-            ₹ {grandTotal}
-          </span>
+        <div className="flex justify-between bg-gray-50 border p-4 rounded-lg">
+          <span className="font-semibold">Grand Total</span>
+          <span className="font-bold text-lg">₹ {grandTotal}</span>
         </div>
 
-        {/* ================= SAVE ================= */}
         <button
-          type="submit"
-          className="
-            w-full
-            bg-blue-600
-            hover:bg-blue-700
-            text-white
-            font-medium
-            py-2.5
-            rounded-lg
-            transition
-          "
+          onClick={() => setShowPayment(true)}
+          className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold"
         >
-          Save Bill
+          Next
         </button>
-      </form>
+      </div>
+
+      {/* ================= PAYMENT POPUP ================= */}
+      {showPayment && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white w-full max-w-md rounded-xl p-6 space-y-4">
+            <h2 className="text-xl font-bold text-black">
+              {customer.name || "Customer"}
+            </h2>
+
+            <div className="flex justify-between">
+              <span>Final Amount</span>
+              <span className="font-bold">₹ {finalTotal}</span>
+            </div>
+
+            <input
+              type="number"
+              placeholder="Discount"
+              value={discount}
+              onChange={(e) => setDiscount(Number(e.target.value))}
+              className="w-full border rounded p-2"
+            />
+
+            {/* PAYMENT MODE */}
+            <div className="space-y-2">
+              {(["cash", "upi", "split"] as PaymentMode[]).map(
+                (m) => (
+                  <label key={m} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={paymentMode === m}
+                      onChange={() => setPaymentMode(m)}
+                    />
+                    {m.toUpperCase()}
+                  </label>
+                )
+              )}
+            </div>
+
+            {paymentMode === "split" && (
+              <input
+                type="number"
+                placeholder="Cash Amount"
+                value={cashAmount}
+                onChange={(e) =>
+                  setCashAmount(Number(e.target.value))
+                }
+                className="w-full border rounded p-2"
+              />
+            )}
+
+            {paymentMode !== "cash" && (
+              <>
+                <div className="text-sm text-gray-600">
+                  UPI Amount: ₹ {upiAmount}
+                </div>
+                <input
+                  type="text"
+                  placeholder="UPI ID / App"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  className="w-full border rounded p-2"
+                />
+              </>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPayment(false)}
+                className="flex-1 border rounded py-2"
+              >
+                Back
+              </button>
+
+              <button
+                onClick={saveBill}
+                className="flex-1 bg-green-600 text-white rounded py-2 font-bold"
+              >
+                Save Bill
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }
