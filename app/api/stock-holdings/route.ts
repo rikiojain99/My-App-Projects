@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import ItemStock from "@/models/ItemStock";
+import Item from "@/models/Item";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -8,9 +9,22 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
 
-  const query = search
-    ? { itemName: { $regex: search, $options: "i" } }
-    : {};
+  let query: any = {};
+
+  if (search) {
+    const items = await Item.find({
+      $or: [
+        { name: { $regex: search, $options: "i" } },
+        { code: { $regex: search, $options: "i" } },
+      ],
+    }).select("name");
+
+    const names = items.map((i) => i.name);
+
+    query = {
+      itemName: { $in: names },
+    };
+  }
 
   const stocks = await ItemStock.find(query)
     .sort({ itemName: 1 })

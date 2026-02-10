@@ -42,16 +42,30 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
     const { search } = Object.fromEntries(req.nextUrl.searchParams.entries());
-    const items = search
-      ? await Inventry.find({ name: { $regex: search, $options: "i" } })
-      : await Inventry.find();
+
+    let items;
+
+    if (search) {
+      items = await Inventry.find({
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { code: { $regex: search, $options: "i" } },
+        ],
+      });
+    } else {
+      items = await Inventry.find();
+    }
+
     return NextResponse.json(items);
   } catch (err) {
-    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: (err as Error).message },
+      { status: 500 }
+    );
   }
 }
+

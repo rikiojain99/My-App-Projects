@@ -69,24 +69,24 @@ export default function CustomerSection({
 
   /* ---------- UI ---------- */
   return (
-    <div className="mb-4">
-      <div className="flex justify-between">
-        <h2 className="font-semibold text-black">
+    <div className="mb-4 border p-2">
+      <div className="flex justify-between ">
+        <h1 className="font-semibold text-lg text-black pb-2 ">
           Customer Details
-        </h2>
+        </h1>
         <button type="button" onClick={toggle}>
           {expanded ? "−" : "+"}
         </button>
       </div>
 
       {expanded && (
-        <div className="space-y-2 mt-2">
+        <div className="space-y-2 grid grid-cols-2 gap-2 ">
           <input
             name="name"
             value={customer.name}
             onChange={handleChange}
             placeholder="Customer Name"
-            className="w-full border p-2"
+            className="w-full border p-2 "
           />
           <input
             name="type"
@@ -108,7 +108,7 @@ export default function CustomerSection({
             onChange={handleChange}
             placeholder="Mobile"
             maxLength={10}
-            className="w-full border p-2"
+            className="w-full mb-2 border p-2 "
           />
         </div>
       )}

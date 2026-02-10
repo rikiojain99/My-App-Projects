@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import QuickStatsBar from "@/components/dashboard/QuickStatsBar";
+import PaymentSummary from "@/components/dashboard/PaymentSummary";
 
 export default function ProfitReport() {
   const [data, setData] = useState<any[]>([]);
@@ -18,6 +20,8 @@ export default function ProfitReport() {
 
   return (
     <ProtectedRoute>
+<QuickStatsBar />
+<PaymentSummary />
       <div className="p-4 md:p-8 bg-white">
         <h1 className="text-xl font-bold mb-4">
           Profit Report

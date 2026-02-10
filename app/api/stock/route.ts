@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Stock from "@/models/Stock";
 import Item from "@/models/Item";
-import ItemStock from "@/models/ItemStock"; // ✅ NEW
-// CREATE STOCK
+import ItemStock from "@/models/ItemStock";
 
-
-// GET ALL STOCK
 export async function GET() {
   await dbConnect();
   const stocks = await Stock.find().sort({ createdAt: -1 });
@@ -16,30 +13,32 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    const { vendorName, purchaseDate, items, grandTotal } = await req.json();
+    const { vendorName, purchaseDate, items, grandTotal } =
+      await req.json();
 
-    // ✅ Save item names for suggestions (existing logic)
     for (const it of items) {
+      const itemDoc = await Item.findOne({
+        $or: [{ name: it.name }, { code: it.name }],
+      });
+
+      const finalName = itemDoc?.name || it.name;
+
       await Item.updateOne(
-        { name: it.name },
-        { $setOnInsert: { name: it.name } },
+        { name: finalName },
+        { $setOnInsert: { name: finalName } },
         { upsert: true }
       );
-    }
 
-    // ✅ NEW: UPDATE INVENTORY
-    for (const it of items) {
       await ItemStock.findOneAndUpdate(
-        { itemName: it.name },
+        { itemName: finalName },
         {
           $inc: { availableQty: it.qty },
           $set: { lastUpdated: new Date() },
         },
-        { upsert: true, new: true }
+        { upsert: true }
       );
     }
 
-    // ✅ Save stock bill (existing logic)
     const stock = await Stock.create({
       vendorName,
       purchaseDate,

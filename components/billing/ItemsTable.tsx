@@ -36,7 +36,7 @@ export default function ItemsTable({
   return (
     <div className="mb-4 border p-2">
       <div className="flex justify-between">
-        <h2 className="font-semibold text-black">Items</h2>
+        <h2 className="font-semibold text-black text-lg">Items</h2>
         <button type="button" onClick={toggle}>
           {expanded ? "−" : "+"}
         </button>

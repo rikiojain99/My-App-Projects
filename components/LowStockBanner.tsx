@@ -18,10 +18,10 @@ export default function LowStockBanner() {
   return (
     <div
       onClick={() => router.push("/inventory/low-stock")}
-      className="cursor-pointer bg-red-100 border border-red-300 text-red-800 p-3 mb-4 rounded flex justify-between items-center hover:bg-red-200"
+      className="cursor-pointer bg-red-100 border  border-red-300 text-red-800 p-3 mb-4 rounded flex justify-between items-center hover:bg-red-200"
     >
       <span>
-        ⚠️ <strong>{count}</strong> items are low in stock
+        ⚠️ <strong>{count}</strong> low stock
       </span>
       <span className="text-sm underline">
         View details →

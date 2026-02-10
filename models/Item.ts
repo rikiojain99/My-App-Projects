@@ -1,14 +1,23 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
-export interface IItem extends Document {
-  name: string;
-}
-
-const ItemSchema: Schema = new Schema(
+const ItemSchema = new Schema(
   {
-    name: { type: String, required: true, unique: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    code: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Item || mongoose.model<IItem>("Item", ItemSchema);
+// ✅ Define indexes ONLY here (not inside fields)
+ItemSchema.index({ name: 1 });
+ItemSchema.index({ code: 1 });
+
+export default models.Item || model("Item", ItemSchema);

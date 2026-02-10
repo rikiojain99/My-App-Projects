@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CustomerSection, { Customer } from "@/components/billing/CustomerSection";
 import ItemsTable from "@/components/billing/ItemsTable";
-
+import PreviousBillsModal from "@/components/billing/PreviousBillsModal";
+import PaymentModal from "@/components/billing/PaymentModal";
 type Item = {
   name: string;
   qty: number;
@@ -22,6 +23,32 @@ export default function AddBill() {
     city: "",
     mobile: "",
   });
+const [previousBills, setPreviousBills] = useState<any[]>([]);
+const [selectedBill, setSelectedBill] = useState<any | null>(null);
+const [paymentData, setPaymentData] = useState<any | null>(null);
+const [upiAccount, setUpiAccount] = useState("");
+
+useEffect(() => {
+  if (customer.mobile.length !== 10) {
+    setPreviousBills([]);
+    return;
+  }
+
+  const fetchPreviousBills = async () => {
+    try {
+      const res = await fetch(`/api/bills?mobile=${customer.mobile}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        setPreviousBills(data.bills || []);
+      }
+    } catch {
+      setPreviousBills([]);
+    }
+  };
+
+  fetchPreviousBills();
+}, [customer.mobile]);
 
   const [items, setItems] = useState<Item[]>([
     { name: "", qty: 1, rate: 0, total: 0 },
@@ -101,62 +128,66 @@ export default function AddBill() {
     setItems(items.filter((_, idx) => idx !== i));
 
   /* ---------------- FINAL SAVE ---------------- */
-  const saveBill = async () => {
-    if (cashAmount + upiAmount !== finalTotal) {
-      setMessage("❌ Payment total mismatch");
+ const saveBill = async () => {
+  if (cashAmount + upiAmount !== finalTotal) {
+    setMessage("❌ Payment total mismatch");
+    return;
+  }
+
+  try {
+    await fetch("/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(customer),
+    });
+
+    const res = await fetch("/api/bills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        billNo,
+        mobile: customer.mobile,
+        items,
+        grandTotal,
+        discount,
+        finalTotal,
+        paymentMode,
+        cashAmount,
+        upiAmount,
+        upiId: paymentMode !== "cash" ? upiId : null,
+        upiAccount: paymentMode !== "cash" ? upiAccount : null,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      setMessage(`❌ ${err.error}`);
       return;
     }
 
-    try {
-      await fetch("/api/customers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customer),
-      });
+    setMessage("✅ Bill saved successfully");
+    setShowPayment(false);
 
-      const res = await fetch("/api/bills", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          billNo,
-          mobile: customer.mobile,
-          items,
-          grandTotal,
-          discount,
-          finalTotal,
-          paymentMode,
-          cashAmount,
-          upiAmount,
-          upiId: paymentMode !== "cash" ? upiId : null,
-        }),
-      });
+    // reset form
+    setCustomer({ name: "", type: "", city: "", mobile: "" });
+    setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
+    setDiscount(0);
+    setCashAmount(0);
+    setUpiAmount(0);
+    setUpiId("");
+    setUpiAccount("");
+  } catch {
+    setMessage("❌ Something went wrong");
+  }
+};
 
-      if (!res.ok) {
-        const err = await res.json();
-        setMessage(`❌ ${err.error}`);
-        return;
-      }
-
-      setMessage("✅ Bill saved successfully");
-      setShowPayment(false);
-
-      setCustomer({ name: "", type: "", city: "", mobile: "" });
-      setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
-      setDiscount(0);
-      setCashAmount(0);
-      setUpiAmount(0);
-      setUpiId("");
-    } catch {
-      setMessage("❌ Something went wrong");
-    }
-  };
 
   /* ---------------- UI ---------------- */
   return (
     <ProtectedRoute>
-      <div className="max-w-5xl mx-auto bg-white border rounded-xl p-4 space-y-6">
-        <h1 className="text-2xl font-bold text-black">
-          Add Bill
+      <div  className="max-w-5xl mx-auto bg-white border rounded-xl p-4 space-y-6">
+        <h1  className="text-3xl font-bold text-black">
+          Add Bill 
         </h1>
 
         {message && <p className="text-sm">{message}</p>}
@@ -169,6 +200,24 @@ export default function AddBill() {
             setExpanded((p) => ({ ...p, 1: !p[1] }))
           }
         />
+<PreviousBillsModal
+  selectedBill={selectedBill}
+  setSelectedBill={setSelectedBill}
+  previousBills={previousBills}
+  customer={customer}
+/>
+{previousBills.length > 0 && (
+  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+  <button
+    onClick={() => setSelectedBill("LIST")}
+    className="text-sm font-medium text-blue-700"
+  >
+    📄 Previous Bills ({previousBills.length})
+  </button>
+</div>
+
+)}
+
 
         <ItemsTable
           items={items}
@@ -196,87 +245,28 @@ export default function AddBill() {
       </div>
 
       {/* ================= PAYMENT POPUP ================= */}
-      {showPayment && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white w-full max-w-md rounded-xl p-6 space-y-4">
-            <h2 className="text-xl font-bold text-black">
-              {customer.name || "Customer"}
-            </h2>
+      
+{showPayment && (
+  <PaymentModal
+    customerName={customer.name}
+    finalTotal={finalTotal}
+    discount={discount}
+    setDiscount={setDiscount}
+    paymentMode={paymentMode}
+    setPaymentMode={setPaymentMode}
+    cashAmount={cashAmount}
+    setCashAmount={setCashAmount}
+    upiAmount={upiAmount}
+    upiId={upiId}
+    setUpiId={setUpiId}
+    upiAccount={upiAccount}
+    setUpiAccount={setUpiAccount}
+    onBack={() => setShowPayment(false)}
+    onSave={saveBill}
+  />
+)}
 
-            <div className="flex justify-between">
-              <span>Final Amount</span>
-              <span className="font-bold">₹ {finalTotal}</span>
-            </div>
 
-            <input
-              type="number"
-              placeholder="Discount"
-              value={discount}
-              onChange={(e) => setDiscount(Number(e.target.value))}
-              className="w-full border rounded p-2"
-            />
-
-            {/* PAYMENT MODE */}
-            <div className="space-y-2">
-              {(["cash", "upi", "split"] as PaymentMode[]).map(
-                (m) => (
-                  <label key={m} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={paymentMode === m}
-                      onChange={() => setPaymentMode(m)}
-                    />
-                    {m.toUpperCase()}
-                  </label>
-                )
-              )}
-            </div>
-
-            {paymentMode === "split" && (
-              <input
-                type="number"
-                placeholder="Cash Amount"
-                value={cashAmount}
-                onChange={(e) =>
-                  setCashAmount(Number(e.target.value))
-                }
-                className="w-full border rounded p-2"
-              />
-            )}
-
-            {paymentMode !== "cash" && (
-              <>
-                <div className="text-sm text-gray-600">
-                  UPI Amount: ₹ {upiAmount}
-                </div>
-                <input
-                  type="text"
-                  placeholder="UPI ID / App"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  className="w-full border rounded p-2"
-                />
-              </>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowPayment(false)}
-                className="flex-1 border rounded py-2"
-              >
-                Back
-              </button>
-
-              <button
-                onClick={saveBill}
-                className="flex-1 bg-green-600 text-white rounded py-2 font-bold"
-              >
-                Save Bill
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </ProtectedRoute>
   );
 }

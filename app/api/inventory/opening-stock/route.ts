@@ -8,14 +8,28 @@ export async function POST(req: Request) {
   const { items } = await req.json();
 
   for (const it of items) {
-    await Item.updateOne(
-      { name: it.name },
-      { $setOnInsert: { name: it.name } },
-      { upsert: true }
-    );
+    const searchValue = (it.name || "").trim();
+
+    // 🔎 Find item by name OR code
+    let item = await Item.findOne({
+      $or: [
+        { name: searchValue },
+        { code: searchValue.toUpperCase() },
+      ],
+    });
+
+    // ✅ If not found → create new item
+    if (!item) {
+      item = await Item.create({
+        name: searchValue,
+      });
+    }
+
+    // 🔥 Always use canonical name for stock
+    const canonicalName = item.name;
 
     await ItemStock.updateOne(
-      { itemName: it.name },
+      { itemName: canonicalName },
       {
         $set: {
           availableQty: it.qty,

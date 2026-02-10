@@ -1,6 +1,7 @@
-import Header from "@/components/Header";
-import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
+import Header from "@/components/Header";
+import GlobalSplash from "@/components/layout/GlobalSplash";
 
 export default function RootLayout({
   children,
@@ -8,11 +9,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+     <html lang="en">
       <body>
         <AuthProvider>
+          <GlobalSplash />
           <Header />
-          <main className="">{children}</main>
+          <main>{children}</main>
         </AuthProvider>
       </body>
     </html>

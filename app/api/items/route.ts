@@ -3,24 +3,28 @@ import dbConnect from "@/lib/mongodb";
 import Item from "@/models/Item";
 
 export async function GET(req: Request) {
-  await dbConnect();
-
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search")?.trim();
-
-  // Only search if 3 or more characters
-  if (!search || search.length < 3) return NextResponse.json([], { status: 200 });
-
   try {
+    await dbConnect();
+
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search");
+
+    if (!search || search.trim().length < 1) {
+      return NextResponse.json([]);
+    }
+
     const items = await Item.find({
-      name: { $regex: search, $options: "i" }, // case-insensitive match
+      $or: [
+        { name: { $regex: search, $options: "i" } },
+        { code: { $regex: search, $options: "i" } },
+      ],
     })
       .limit(10)
-      .select("_id name"); // only return _id and name
+      .lean();
 
-    return NextResponse.json(items, { status: 200 });
+    return NextResponse.json(items);
   } catch (err) {
-    console.error("Item search failed:", err);
-    return NextResponse.json({ error: "Failed to fetch items" }, { status: 500 });
+    console.error("Item search error:", err);
+    return NextResponse.json([], { status: 500 });
   }
 }

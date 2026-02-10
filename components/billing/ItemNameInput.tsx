@@ -12,12 +12,15 @@ type Item = {
   name: string;
   qty: number;
   rate: number;
+  code?:string;
   total: number;
 };
 
 type ItemType = {
   _id: string;
   name: string;
+  code?:string;
+
 };
 
 type Props = {
@@ -149,7 +152,12 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
                   setSuggestions([]);
                 }}
               >
-                {item.name}
+                {item.name} 
+                {item.code && (
+    <span className="text-xs text-gray-500 ml-2">
+      ({item.code})
+    </span>
+  )}
               </li>
             ))}
           </ul>
