@@ -10,6 +10,8 @@ export interface IStock extends Document {
     total: number;
   }[];
   grandTotal: number;
+  extraExpense: { type: Number, default: 0 }, // ✅ NEW
+
 }
 
 const StockSchema: Schema = new Schema(
@@ -25,6 +27,8 @@ const StockSchema: Schema = new Schema(
       },
     ],
     grandTotal: { type: Number, required: true },
+  extraExpense: { type: Number, default: 0 }, // ✅ NEW
+
   },
   { timestamps: true }
 );

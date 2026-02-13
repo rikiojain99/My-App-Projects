@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 }
 
 /* =====================================================
-   GET BILLS (SMART SEARCH + PAGINATION)
+   GET BILLS (SMART SEARCH + MOBILE + DATE + PAGINATION)
 ===================================================== */
 export async function GET(req: Request) {
   await dbConnect();
@@ -39,27 +39,65 @@ export async function GET(req: Request) {
   const skip = (page - 1) * limit;
 
   const search = searchParams.get("search") || "";
+  const mobile = searchParams.get("mobile");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
   let query: any = { deleted: false };
 
-  /* ================= SEARCH ================= */
-  if (search && search.length >= 3) {
-    query.$or = [
-      { "customerId.name": { $regex: search, $options: "i" } },
-      { "customerId.mobile": { $regex: search, $options: "i" } },
-      { "customerId.city": { $regex: search, $options: "i" } },
-    ];
+  /* =====================================================
+     1️⃣ MOBILE FILTER (FOR PREVIOUS BILLS MODAL)
+  ===================================================== */
+  if (mobile && mobile.trim().length === 10) {
+    const customer = await Customer.findOne({
+      mobile: mobile.trim(),
+    });
+
+    if (!customer) {
+      return NextResponse.json({ bills: [] });
+    }
+
+    const bills = await Bill.find({
+      customerId: customer._id,
+      deleted: false,
+    })
+      .populate("customerId")
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    return NextResponse.json({ bills });
   }
 
-  /* ================= DATE FILTER ================= */
+  /* =====================================================
+     2️⃣ SMART SEARCH (DASHBOARD SEARCH)
+  ===================================================== */
+  if (search && search.length >= 3) {
+    // First find matching customers
+    const customers = await Customer.find({
+      $or: [
+        { name: { $regex: search, $options: "i" } },
+        { mobile: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } },
+      ],
+    }).select("_id");
+
+    const customerIds = customers.map((c) => c._id);
+
+    query.customerId = { $in: customerIds };
+  }
+
+  /* =====================================================
+     3️⃣ DATE FILTER
+  ===================================================== */
   if (from || to) {
     query.createdAt = {};
     if (from) query.createdAt.$gte = new Date(from);
     if (to) query.createdAt.$lte = new Date(to);
   }
 
+  /* =====================================================
+     4️⃣ PAGINATION
+  ===================================================== */
   const bills = await Bill.find(query)
     .populate("customerId")
     .sort({ createdAt: -1 })
@@ -89,7 +127,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Bill not found" }, { status: 404 });
   }
 
-  // Restore old stock
+  /* ================= RESTORE OLD STOCK ================= */
   for (const it of oldBill.items) {
     await ItemStock.findOneAndUpdate(
       { itemName: it.name },
@@ -97,7 +135,7 @@ export async function PUT(req: Request) {
     );
   }
 
-  // Deduct new stock
+  /* ================= DEDUCT NEW STOCK ================= */
   for (const it of updates.items) {
     const stock = await ItemStock.findOne({ itemName: it.name });
 
@@ -116,6 +154,7 @@ export async function PUT(req: Request) {
     }
   }
 
+  /* ================= UPDATE BILL ================= */
   const updatedBill = await Bill.findByIdAndUpdate(
     billId,
     {

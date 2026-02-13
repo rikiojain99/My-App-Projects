@@ -3,8 +3,6 @@
 import { useAuth } from "@/components/AuthProvider";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import LowStockBanner from "@/components/LowStockBanner";
-
 export default function Home() {
   const { authenticated, role, login } = useAuth();
 
@@ -41,126 +39,33 @@ export default function Home() {
       .catch(() => {});
   }, [authenticated]);
 
-  /* ---------------- LOGIN ---------------- */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    const ok = await login(passkey);
-    if (!ok) setError("Invalid passkey");
-  };
-
-  useEffect(() => {
-    if (!authenticated && !loading && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [authenticated, loading]);
-
-  if (loading) return null;
-
-  /* ---------------- LOGIN SCREEN ---------------- */
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-        <div className="w-full max-w-md bg-white p-8 rounded-xl border shadow-sm">
-          <h1 className="text-xl font-semibold text-center mb-4">
-            Enter Passkey
-          </h1>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              ref={inputRef}
-              type="password"
-              value={passkey}
-              onChange={(e) => setPasskey(e.target.value)}
-              className="w-full p-3 border rounded-lg"
-              placeholder="Passkey"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full py-2 bg-blue-600 text-white rounded-lg"
-            >
-              Login
-            </button>
-          </form>
-
-          {error && (
-            <p className="text-red-500 text-sm text-center mt-3">
-              {error}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   /* ---------------- DASHBOARD ---------------- */
   return (
     <div className="min-h-screen bg-gray-100 p-4 pb-10">
       <div className="max-w-lg mx-auto space-y-6">
 
-        <h1 className="text-2xl font-semibold text-center">
-          Welcome ({role})
-        </h1>
+        <h1 className=" underline text-2xl font-semibold text-center">
+         Business Management </h1>
 
-        {/* SUMMARY */}
-        <div className="grid grid-cols-2 gap-3">
-          <SummaryCard icon="🧾" label="Bills" value={totalBills} />
-          <SummaryCard icon="⚠️" label="Low Stock" value={lowStockCount} />
-        </div>
+    
 
-        <LowStockBanner />
 
-        {/* BILLS */}
-        <Section
-          id="bills"
-          title="Bills"
-          openSection={openSection}
-          setOpenSection={setOpenSection}
-        >
-          <DashboardLink href="/bills/add-bill" icon="🧾" label="Add Bill" />
-          <DashboardLink href="/bills/view-bills" icon="📂" label="View Bills" />
-        </Section>
 
-        {/* INVENTORY */}
-        <Section
-          id="inventory"
-          title="Inventory"
-          openSection={openSection}
-          setOpenSection={setOpenSection}
-        >
-          <DashboardLink href="/inventory/add-stoock" icon="➕📦" label="Add Stock" />
-          <DashboardLink href="/inventory/stockView" icon="📦" label="View Stock" />
-          <DashboardLink href="/inventory/stock-holdings" icon="📊" label="Available Stock " />
-          <DashboardLink href="/inventory/opening-stock" icon="🗂️" label="Opening Stock (One-time)" />
-        </Section>
-
-        {/* MANUFACTURING */}
-        <Section
-          id="manufacturing"
-          title="Manufacturing"
-          openSection={openSection}
-          setOpenSection={setOpenSection}
-        >
-          <DashboardLink href="/manufacturing/create" icon="🏭" label="Create Items" />
-          <DashboardLink href="/manufacturing/history" icon="📂" label="View Manufacturing Items" />
-        </Section>
-{/* 
-        {/* REPORTS 
+        {/* REPORTS */}
         <Section
           id="reports"
           title="Reports"
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="\reports\stockReport"  icon="📊" label="stock Report" />
-          {/* <DashboardLink href="\inventory\view-inventry"  icon="📊" label="view-inventry" /> 
-          {/* <DashboardLink href="/stock-report" icon="📊" label="stock-report" /> 
+          <DashboardLink href="/expenses/add-expense" icon="📊" label="Expense" />
+          <DashboardLink href="/reports/stockReport"  icon="📊" label="stock Report" />
+          <DashboardLink href="\inventory\view-inventry"  icon="📊" label="view-inventry" />
+          {/* <DashboardLink href="/stock-report" icon="📊" label="stock-report" /> */}
           <DashboardLink href="/profit-report" icon="📊" label="Profit Report" />
           <DashboardLink href="/manufacturing/history" icon="📂" label="Manufacturing History" />
         </Section>
-         */}
 
       </div>
     </div>

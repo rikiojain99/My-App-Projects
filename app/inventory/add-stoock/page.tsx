@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
 /* ---------------- TYPES ---------------- */
@@ -17,15 +18,19 @@ export default function Stock() {
     { name: "", qty: 1, rate: 0, total: 0 },
   ]);
   const [message, setMessage] = useState("");
+  const [extraExpense, setExtraExpense] = useState(0);
 
-  /* Vendor suggestion state */
+  /* Vendor suggestion */
   const [vendors, setVendors] = useState<string[]>([]);
-  const [showVendorSuggestions, setShowVendorSuggestions] = useState(false);
+  const [showVendorSuggestions, setShowVendorSuggestions] =
+    useState(false);
 
-  /* -------- SET CURRENT DATE -------- */
+  /* Item refs for auto-focus */
+  const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  /* -------- SET TODAY DATE -------- */
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    setPurchaseDate(today);
+    setPurchaseDate(new Date().toISOString().slice(0, 10));
   }, []);
 
   /* -------- FETCH UNIQUE VENDORS -------- */
@@ -42,10 +47,16 @@ export default function Stock() {
       });
   }, []);
 
-  /* -------- TOTAL -------- */
-  const grandTotal = useMemo(
+  /* -------- SUBTOTAL -------- */
+  const subTotal = useMemo(
     () => items.reduce((sum, i) => sum + i.total, 0),
     [items]
+  );
+
+  /* -------- GRAND TOTAL (WITH EXPENSE) -------- */
+  const grandTotal = useMemo(
+    () => subTotal + extraExpense,
+    [subTotal, extraExpense]
   );
 
   /* -------- ITEM CHANGE -------- */
@@ -66,8 +77,17 @@ export default function Stock() {
     setItems(newItems);
   };
 
-  const addItem = () =>
-    setItems([...items, { name: "", qty: 1, rate: 0, total: 0 }]);
+  /* -------- AUTO ADD ITEM -------- */
+  const addItem = () => {
+    setItems([
+      ...items,
+      { name: "", qty: 1, rate: 0, total: 0 },
+    ]);
+
+    setTimeout(() => {
+      itemRefs.current[items.length]?.focus();
+    }, 50);
+  };
 
   const removeItem = (index: number) =>
     setItems(items.filter((_, i) => i !== index));
@@ -85,6 +105,7 @@ export default function Stock() {
         purchaseDate,
         items,
         grandTotal,
+        extraExpense, // ✅ added
       }),
     });
 
@@ -95,19 +116,31 @@ export default function Stock() {
 
     setMessage("✅ Stock added successfully");
     setVendorName("");
-    setPurchaseDate(new Date().toISOString().slice(0, 10));
+    setPurchaseDate(
+      new Date().toISOString().slice(0, 10)
+    );
     setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
+    setExtraExpense(0);
   };
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="p-5 max-w-md mx-auto bg-amber-50 text-black" >
-      <h1 className="text-xl font-bold text-black mb-4">Add Stock</h1>
+    <div className="p-6 max-w-3xl mx-auto bg-white border rounded-xl space-y-6 shadow-sm">
+      <h1 className="text-2xl font-bold">
+        Add Stock
+      </h1>
 
-      {message && <p className="mb-3 text-green-600">{message}</p>}
+      {message && (
+        <p className="text-sm text-green-600">
+          {message}
+        </p>
+      )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* -------- VENDOR INPUT -------- */}
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
+        {/* ===== Vendor ===== */}
         <div className="relative">
           <input
             type="text"
@@ -118,9 +151,12 @@ export default function Stock() {
               setShowVendorSuggestions(true);
             }}
             onBlur={() =>
-              setTimeout(() => setShowVendorSuggestions(false), 200)
+              setTimeout(
+                () => setShowVendorSuggestions(false),
+                200
+              )
             }
-            className="w-full p-2 border rounded text-black"
+            className="w-full p-3 border rounded"
             required
           />
 
@@ -128,7 +164,11 @@ export default function Stock() {
             <div className="absolute z-50 bg-white border rounded w-full max-h-40 overflow-y-auto shadow-lg">
               {vendors
                 .filter((v) =>
-                  v.toLowerCase().includes(vendorName.toLowerCase())
+                  v
+                    .toLowerCase()
+                    .includes(
+                      vendorName.toLowerCase()
+                    )
                 )
                 .map((v) => (
                   <div
@@ -136,9 +176,11 @@ export default function Stock() {
                     onMouseDown={(e) => {
                       e.preventDefault();
                       setVendorName(v);
-                      setShowVendorSuggestions(false);
+                      setShowVendorSuggestions(
+                        false
+                      );
                     }}
-                    className="px-2 py-1 cursor-pointer hover:bg-blue-100"
+                    className="px-3 py-2 cursor-pointer hover:bg-blue-50"
                   >
                     {v}
                   </div>
@@ -147,72 +189,131 @@ export default function Stock() {
           )}
         </div>
 
-        {/* -------- DATE -------- */}
+        {/* ===== Date ===== */}
         <input
           type="date"
           value={purchaseDate}
-          onChange={(e) => setPurchaseDate(e.target.value)}
-          className="w-full p-2 border rounded text-black"
+          onChange={(e) =>
+            setPurchaseDate(e.target.value)
+          }
+          className="w-full p-3 border rounded"
           required
         />
 
-        {/* -------- ITEMS -------- */}
-        {items.map((item, index) => (
-          <div key={index} className="grid grid-cols-5 gap-2 items-center">
-            <ItemNameInput
-              value={item.name}
-              onChange={(e) => handleItemChange(index, e)}
-            />
+        {/* ===== Items ===== */}
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-12 gap-2 items-center"
+            >
+              <div className="col-span-1 text-sm font-semibold text-gray-500">
+                {index + 1}.
+              </div>
 
-            <input
-              name="qty"
-              type="number"
-              placeholder="Qty"
-              value={item.qty}
-              onChange={(e) => handleItemChange(index, e)}
-              className="p-2 border rounded text-black"
-            />
+              <div className="col-span-4">
+                <ItemNameInput
+                  value={item.name}
+                  onChange={(e) =>
+                    handleItemChange(index, e)
+                  }
+                  inputRef={(el) =>
+                    (itemRefs.current[index] = el)
+                  }
+                  onEnter={addItem}
+                />
+              </div>
 
-            <input
-              name="rate"
-              type="number"
-              placeholder="Rate"
-              value={item.rate}
-              onChange={(e) => handleItemChange(index, e)}
-              className="p-2 border rounded text-black"
-            />
+              <input
+                name="qty"
+                type="number"
+                value={item.qty}
+                onChange={(e) =>
+                  handleItemChange(index, e)
+                }
+                className="col-span-2 p-2 border rounded"
+              />
 
-            <span className="text-black">{item.total}</span>
+              <input
+                name="rate"
+                type="number"
+                value={item.rate}
+                onChange={(e) =>
+                  handleItemChange(index, e)
+                }
+                className="col-span-2 p-2 border rounded"
+              />
 
-            {items.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeItem(index)}
-                className="text-red-500"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+              <div className="col-span-2 text-right font-medium">
+                ₹ {item.total}
+              </div>
+
+              <div className="col-span-1 text-right">
+                {items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeItem(index)
+                    }
+                    className="text-red-500"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
 
         <button
           type="button"
           onClick={addItem}
-          className="bg-green-500 text-white px-3 py-1 rounded"
+          className="bg-green-600 text-white px-4 py-2 rounded"
         >
           + Add Item
         </button>
 
-        {/* -------- TOTAL -------- */}
-        <div className="flex justify-between font-bold text-black border-t pt-2">
-          <span>Total</span>
-          <span>{grandTotal}</span>
+        {/* ===== Extra Expense ===== */}
+        <div className="border-t pt-4 space-y-2">
+          <label className="text-sm text-gray-600">
+            Additional Purchase Expense
+          </label>
+          <input
+            type="number"
+            value={extraExpense}
+            onChange={(e) =>
+              setExtraExpense(
+                Number(e.target.value)
+              )
+            }
+            className="w-full p-3 border rounded"
+            placeholder="Transport / Loading / Other"
+          />
+        </div>
+
+        {/* ===== Totals ===== */}
+        <div className="space-y-1 border-t pt-4 text-lg">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span>₹ {subTotal}</span>
+          </div>
+
+          {extraExpense > 0 && (
+            <div className="flex justify-between text-orange-600">
+              <span>Extra Expense</span>
+              <span>₹ {extraExpense}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between font-bold text-xl">
+            <span>Grand Total</span>
+            <span>₹ {grandTotal}</span>
+          </div>
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded"
+          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold"
         >
           Save Stock
         </button>
@@ -221,18 +322,28 @@ export default function Stock() {
   );
 }
 
-/* ===================================================
-   ITEM NAME INPUT WITH SMART SUGGESTION (FIXED)
-   =================================================== */
+/* =====================================================
+   ITEM NAME INPUT WITH SUGGESTIONS + ENTER FOCUS
+===================================================== */
 function ItemNameInput({
   value,
   onChange,
+  inputRef,
+  onEnter,
 }: {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+  inputRef: (
+    el: HTMLInputElement | null
+  ) => void;
+  onEnter: () => void;
 }) {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [suggestions, setSuggestions] =
+    useState<string[]>([]);
+  const debounceRef =
+    useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (value.length < 3) {
@@ -240,30 +351,46 @@ function ItemNameInput({
       return;
     }
 
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (debounceRef.current)
+      clearTimeout(debounceRef.current);
 
-    debounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/items?search=${value}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSuggestions(data.map((i: any) => i.name));
-      }
-    }, 300);
+    debounceRef.current = setTimeout(
+      async () => {
+        const res = await fetch(
+          `/api/items?search=${value}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(
+            data.map((i: any) => i.name)
+          );
+        }
+      },
+      300
+    );
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (debounceRef.current)
+        clearTimeout(debounceRef.current);
     };
   }, [value]);
 
   return (
-    <div className="relative z-50">
+    <div className="relative">
       <input
+        ref={inputRef}
         name="name"
-        placeholder="Item"
         value={value}
         onChange={onChange}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+        placeholder="Item Name"
+        className="p-2 border rounded w-full"
         autoComplete="off"
-        className="p-2 border rounded text-black w-full"
         required
       />
 
@@ -273,9 +400,12 @@ function ItemNameInput({
             <div
               key={s}
               onMouseDown={(e) => {
-                e.preventDefault(); // ✅ critical
+                e.preventDefault();
                 onChange({
-                  target: { name: "name", value: s },
+                  target: {
+                    name: "name",
+                    value: s,
+                  },
                 } as any);
                 setSuggestions([]);
               }}

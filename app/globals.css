@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@tailwind utilities;
+
 /* ================= ROOT VARIABLES ================= */
 :root {
   /* Light mode */

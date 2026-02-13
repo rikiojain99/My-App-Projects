@@ -40,7 +40,7 @@ export default function Header() {
     { label: "Dashboard", path: "/" },
     { label: "Bills", path: "/bills/view-bills" },
     { label: "Inventory", path: "/inventory/stockView" },
-    { label: "Reports", path: "/stock-report" },
+    { label: "Business Management ", path: "/businessManagement/layout" },
   ];
 
   const handleLogout = async () => {
