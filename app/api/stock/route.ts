@@ -28,14 +28,43 @@ export async function POST(req: Request) {
       purchaseDate,
       items,
       grandTotal,
-      extraExpense = 0,   // ✅ NEW (safe default)
+      extraExpense = 0,   // ✅ SAFE DEFAULT
     } = await req.json();
+
+    /* =====================================================
+       CALCULATE SUBTOTAL
+    ===================================================== */
+    const subTotal = items.reduce(
+      (sum: number, i: any) => sum + i.total,
+      0
+    );
+
+    /* =====================================================
+       DISTRIBUTE EXTRA EXPENSE ACROSS MULTIPLE ITEMS
+    ===================================================== */
+    const updatedItems = items.map((it: any) => {
+      if (extraExpense > 0 && subTotal > 0) {
+        const ratio = it.total / subTotal;
+        const itemExtra = ratio * extraExpense;
+
+        const newTotal = it.total + itemExtra;
+        const newRate = newTotal / it.qty;
+
+        return {
+          ...it,
+          rate: Number(newRate.toFixed(2)),
+          total: Number(newTotal.toFixed(2)),
+        };
+      }
+
+      return it;
+    });
 
     /* =====================================================
        UPDATE ITEM + STOCK QUANTITY
     ===================================================== */
 
-    for (const it of items) {
+    for (const it of updatedItems) {
       const itemDoc = await Item.findOne({
         $or: [{ name: it.name }, { code: it.name }],
       });
@@ -67,9 +96,9 @@ export async function POST(req: Request) {
     const stock = await Stock.create({
       vendorName,
       purchaseDate,
-      items,
+      items: updatedItems,   // ✅ save corrected cost
       grandTotal,
-      extraExpense, // ✅ NEW FIELD
+      extraExpense,
     });
 
     return NextResponse.json(stock, { status: 201 });

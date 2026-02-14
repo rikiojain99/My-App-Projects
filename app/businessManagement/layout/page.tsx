@@ -61,10 +61,24 @@ export default function Home() {
         >
           <DashboardLink href="/expenses/add-expense" icon="📊" label="Expense" />
           <DashboardLink href="/reports/stockReport"  icon="📊" label="stock Report" />
-          <DashboardLink href="\inventory\view-inventry"  icon="📊" label="view-inventry" />
+          {/* <DashboardLink href="\inventory\view-inventry"  icon="📊" label="view-inventry" /> */}
           {/* <DashboardLink href="/stock-report" icon="📊" label="stock-report" /> */}
           <DashboardLink href="/profit-report" icon="📊" label="Profit Report" />
-          <DashboardLink href="/manufacturing/history" icon="📂" label="Manufacturing History" />
+          {/* <DashboardLink href="/manufacturing/history" icon="📂" label="Manufacturing History" /> */}
+        </Section>
+
+<Section
+          id="reports inventory"
+          title="Reports inventory"
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+        >
+          <DashboardLink href="/inventory/available-stock" icon="📊" label="Expense" />
+          {/* <DashboardLink href="/reports/stockReport"  icon="📊" label="stock Report" /> */}
+          <DashboardLink href="\inventory\view-inventry"  icon="📊" label="view-inventry" />
+          {/* <DashboardLink href="/stock-report" icon="📊" label="stock-report" /> */}
+          {/* <DashboardLink href="/profit-report" icon="📊" label="Profit Report" /> */}
+          {/* <DashboardLink href="/manufacturing/history" icon="📂" label="Manufacturing History" /> */}
         </Section>
 
       </div>
