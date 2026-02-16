@@ -49,14 +49,14 @@ export default function DailySaleSummary({
         <div>
           <h2 className="font-semibold text-lg">
             Today's Fast Sales
-            <span className="ml-2 text-sm text-gray-500">
-              ({totalTransactions})
+            <span className="ml-2  text-sm text-gray-500">
+              Bills ({totalTransactions})
             </span>
           </h2>
-
+{/* 
           <p className="text-sm font-semibold text-green-600">
             ₹ {totalAmount}
-          </p>
+          </p> */}
         </div>
 
         <button
@@ -98,7 +98,7 @@ export default function DailySaleSummary({
                 Recent Fast Sales
               </h3>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {lastThree.map(
                   (entry: any, index: number) => (
                     <div
