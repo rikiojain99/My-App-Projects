@@ -5,6 +5,7 @@ import BillCard from "@/components/billing/BillCard";
 import BillViewModal from "@/components/billing/BillViewModal";
 import BillEditModal from "@/components/billing/BillEditModal";
 import FloatingAddButton from "@/components/billing/FloatingAddButton";
+import DailySaleSummary from "@/components/billing/DailySaleSummary";
 
 export default function ViewBills() {
   const [bills, setBills] = useState<any[]>([]);
@@ -22,6 +23,57 @@ export default function ViewBills() {
   const [viewBill, setViewBill] = useState<any | null>(null);
   const [editBill, setEditBill] = useState<any | null>(null);
 
+  /* ================= DAILY SALE STATE ================= */
+  const [dailySale, setDailySale] = useState<any | null>(null);
+  const [closing, setClosing] = useState(false);
+
+  /* ================= FETCH DAILY SALE ================= */
+  async function fetchDailySale() {
+    try {
+      const res = await fetch("/api/daily-sale");
+
+      if (!res.ok) {
+        console.error("Failed to fetch daily sale");
+        return;
+      }
+
+      const data = await res.json();
+      setDailySale(data);
+    } catch (err) {
+      console.error("Daily sale fetch error:", err);
+    }
+  }
+
+  /* ================= CLOSE DAY ================= */
+  async function closeDay() {
+    if (!confirm("Are you sure you want to close today?")) return;
+
+    try {
+      setClosing(true);
+
+      const res = await fetch("/api/daily-sale/close", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data?.error || "Close failed");
+        return;
+      }
+
+      alert("Day closed successfully!");
+
+      await fetchDailySale();
+      await fetchBills(1, true);
+    } catch (err) {
+      console.error("Close day error:", err);
+      alert("Close failed");
+    } finally {
+      setClosing(false);
+    }
+  }
+
   /* ================= DEBOUNCE SEARCH ================= */
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -33,35 +85,51 @@ export default function ViewBills() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  /* ================= FETCH ================= */
+  /* ================= FETCH BILLS ================= */
   async function fetchBills(newPage = 1, reset = false) {
     if (loading) return;
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await fetch(
-      `/api/bills?page=${newPage}&limit=15&search=${debouncedSearch}&from=${fromDate}&to=${toDate}`
-    );
-
-    const data = await res.json();
-
-    if (reset) {
-      setBills(data.bills);
-    } else {
-      setBills((prev) =>
-        newPage === 1 ? data.bills : [...prev, ...data.bills]
+      const res = await fetch(
+        `/api/bills?page=${newPage}&limit=15&search=${debouncedSearch}&from=${fromDate}&to=${toDate}`
       );
-    }
 
-    setPage(data.currentPage);
-    setHasMore(data.currentPage < data.totalPages);
-    setLoading(false);
+      if (!res.ok) {
+        console.error("Failed to fetch bills");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (reset) {
+        setBills(data.bills || []);
+      } else {
+        setBills((prev) =>
+          newPage === 1
+            ? data.bills || []
+            : [...prev, ...(data.bills || [])]
+        );
+      }
+
+      setPage(data.currentPage || 1);
+      setHasMore(data.currentPage < data.totalPages);
+    } catch (err) {
+      console.error("Fetch bills error:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  /* ================= RESET ON FILTER CHANGE ================= */
+  /* ================= RESET ON FILTER ================= */
   useEffect(() => {
     fetchBills(1, true);
   }, [debouncedSearch, fromDate, toDate]);
+
+  useEffect(() => {
+    fetchDailySale();
+  }, []);
 
   /* ================= INFINITE SCROLL ================= */
   useEffect(() => {
@@ -77,7 +145,8 @@ export default function ViewBills() {
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () =>
+      window.removeEventListener("scroll", handleScroll);
   }, [page, hasMore, loading]);
 
   /* ================= DATE PRESETS ================= */
@@ -85,17 +154,9 @@ export default function ViewBills() {
     const today = new Date();
     let from = new Date();
 
-    if (type === "today") {
-      from = today;
-    }
-
-    if (type === "week") {
-      from.setDate(today.getDate() - 7);
-    }
-
-    if (type === "month") {
-      from.setMonth(today.getMonth() - 1);
-    }
+    if (type === "today") from = today;
+    if (type === "week") from.setDate(today.getDate() - 7);
+    if (type === "month") from.setMonth(today.getMonth() - 1);
 
     setFromDate(from.toISOString().split("T")[0]);
     setToDate(today.toISOString().split("T")[0]);
@@ -107,7 +168,17 @@ export default function ViewBills() {
 
         <h1 className="text-2xl font-bold">Bills</h1>
 
-        {/* SEARCH */}
+        {/* ================= DAILY SALE SUMMARY ================= */}
+{/* ================= DAILY SALE SUMMARY ================= */}
+{dailySale && !dailySale.isClosed && (
+  <DailySaleSummary
+    dailySale={dailySale}
+    closing={closing}
+    onCloseDay={closeDay}
+  />
+)}
+
+        {/* ================= SEARCH ================= */}
         <input
           type="text"
           placeholder="Search name / mobile / city (min 3 chars)"
@@ -116,7 +187,7 @@ export default function ViewBills() {
           className="w-full p-3 border rounded-md"
         />
 
-        {/* DATE FILTERS */}
+        {/* ================= DATE FILTER ================= */}
         <div className="grid grid-cols-2 gap-2">
           <input
             type="date"
@@ -132,7 +203,6 @@ export default function ViewBills() {
           />
         </div>
 
-        {/* PRESETS */}
         <div className="flex gap-2 text-sm">
           <button
             onClick={() => setPreset("today")}
@@ -156,7 +226,7 @@ export default function ViewBills() {
           </button>
         </div>
 
-        {/* LIST */}
+        {/* ================= BILL LIST ================= */}
         <div className="space-y-3">
           {bills.map((bill) => (
             <BillCard

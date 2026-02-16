@@ -15,6 +15,8 @@ export interface IBill extends Document {
   paymentMode: "cash" | "upi" | "split";
   cashAmount: number;
   upiAmount: number;
+  isFastBill: Boolean;
+
   upiId: string | null;
   upiAccount: string | null;
   deleted: boolean;
@@ -27,7 +29,7 @@ const BillSchema: Schema = new Schema(
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
+      required: false,
     },
 
     items: [
@@ -52,6 +54,7 @@ const BillSchema: Schema = new Schema(
     },
 
     cashAmount: { type: Number, default: 0 },
+isFastBill: { type: Boolean, default: false },
 
     upiAmount: { type: Number, default: 0 },
 

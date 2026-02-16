@@ -12,15 +12,14 @@ type Item = {
   name: string;
   qty: number;
   rate: number;
-  code?:string;
+  code?: string;
   total: number;
 };
 
 type ItemType = {
   _id: string;
   name: string;
-  code?:string;
-
+  code?: string;
 };
 
 type Props = {
@@ -35,12 +34,18 @@ type Props = {
 /* ================= COMPONENT ================= */
 const ItemNameInput = forwardRef<HTMLInputElement, Props>(
   ({ index, items, handleItemChange }, ref) => {
-    const [query, setQuery] = useState(items[index].name);
-    const [suggestions, setSuggestions] = useState<ItemType[]>([]);
-    const [stockQty, setStockQty] = useState<number | null>(null);
+    const [query, setQuery] = useState<string>(
+      items[index].name
+    );
+    const [suggestions, setSuggestions] =
+      useState<ItemType[]>([]);
+    const [stockQty, setStockQty] =
+      useState<number | null>(null);
 
-    const suggestionTimer = useRef<NodeJS.Timeout | null>(null);
-    const stockTimer = useRef<NodeJS.Timeout | null>(null);
+    const suggestionTimer =
+      useRef<NodeJS.Timeout | null>(null);
+    const stockTimer =
+      useRef<NodeJS.Timeout | null>(null);
 
     /* ---------- ITEM SUGGESTIONS ---------- */
     useEffect(() => {
@@ -53,16 +58,23 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         clearTimeout(suggestionTimer.current);
       }
 
-      suggestionTimer.current = setTimeout(async () => {
-        try {
-          const res = await fetch(`/api/items?search=${query}`);
-          if (res.ok) {
-            setSuggestions(await res.json());
+      suggestionTimer.current = setTimeout(
+        async () => {
+          try {
+            const res = await fetch(
+              `/api/items?search=${query}`
+            );
+            if (res.ok) {
+              const data: ItemType[] =
+                await res.json();
+              setSuggestions(data);
+            }
+          } catch {
+            setSuggestions([]);
           }
-        } catch {
-          setSuggestions([]);
-        }
-      }, 300);
+        },
+        300
+      );
 
       return () => {
         if (suggestionTimer.current) {
@@ -82,19 +94,28 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         clearTimeout(stockTimer.current);
       }
 
-      stockTimer.current = setTimeout(async () => {
-        try {
-          const res = await fetch(
-            `/api/stock/check?name=${encodeURIComponent(query)}`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            setStockQty(data?.availableQty ?? 0);
+      stockTimer.current = setTimeout(
+        async () => {
+          try {
+            const res = await fetch(
+              `/api/stock/check?name=${encodeURIComponent(
+                query
+              )}`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              setStockQty(
+                typeof data?.availableQty === "number"
+                  ? data.availableQty
+                  : 0
+              );
+            }
+          } catch {
+            setStockQty(null);
           }
-        } catch {
-          setStockQty(null);
-        }
-      }, 300);
+        },
+        300
+      );
 
       return () => {
         if (stockTimer.current) {
@@ -112,7 +133,9 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           value={query}
           placeholder="Item name"
           className="border p-2 w-full"
-          onChange={(e) => {
+          onChange={(
+            e: React.ChangeEvent<HTMLInputElement>
+          ) => {
             setQuery(e.target.value);
             handleItemChange(index, e);
           }}
@@ -140,24 +163,28 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
               <li
                 key={item._id}
                 className="px-2 py-1 cursor-pointer hover:bg-blue-100"
-                onMouseDown={(e) => {
+                onMouseDown={(
+                  e: React.MouseEvent<HTMLLIElement>
+                ) => {
                   e.preventDefault();
                   setQuery(item.name);
+
                   handleItemChange(index, {
                     target: {
                       name: "name",
                       value: item.name,
                     },
                   } as React.ChangeEvent<HTMLInputElement>);
+
                   setSuggestions([]);
                 }}
               >
-                {item.name} 
+                {item.name}
                 {item.code && (
-    <span className="text-xs text-gray-500 ml-2">
-      ({item.code})
-    </span>
-  )}
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({item.code})
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -168,4 +195,5 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
 );
 
 ItemNameInput.displayName = "ItemNameInput";
+
 export default ItemNameInput;

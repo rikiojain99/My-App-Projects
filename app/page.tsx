@@ -119,6 +119,7 @@ export default function Home() {
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
+          <DashboardLink href="/bills/fast-bill" icon="🧾" label="Fast-Bill" />
           <DashboardLink href="/bills/add-bill" icon="🧾" label="Add Bill" />
           <DashboardLink href="/bills/view-bills" icon="📂" label="View Bills" />
         </Section>

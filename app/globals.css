@@ -4,11 +4,11 @@
 
 /* ================= ROOT VARIABLES ================= */
 :root {
-  /* Light mode */
+  /* Light mode */  
   --background: hsl(0 0% 100%);
-  --foreground: hsl(223, 17%, 92%);
-  --muted: hsl(210 40% 96%);
-  --border: hsl(214 32% 91%);
+  --foreground: hsl(0, 0%, 4%);
+  --muted: hsl(0, 0%, 28%);
+  --border: hsl(210, 3%, 38%);
   --primary: hsl(221 83% 53%);
 }
 

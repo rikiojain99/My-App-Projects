@@ -91,22 +91,33 @@ export default function AddBill() {
   );
 
   /* ---------------- AUTO SPLIT ---------------- */
+/* ================= AUTO PAYMENT CALCULATION ================= */
 
-  useMemo(() => {
-    if (paymentMode === "cash") {
-      setCashAmount(finalTotal);
-      setUpiAmount(0);
-    }
+useEffect(() => {
+  if (paymentMode === "cash") {
+    setCashAmount(finalTotal);
+    setUpiAmount(0);
+  }
 
-    if (paymentMode === "upi") {
-      setCashAmount(0);
-      setUpiAmount(finalTotal);
-    }
+  if (paymentMode === "upi") {
+    setCashAmount(0);
+    setUpiAmount(finalTotal);
+  }
 
-    if (paymentMode === "split") {
-      setUpiAmount(Math.max(finalTotal - cashAmount, 0));
-    }
-  }, [paymentMode, cashAmount, finalTotal]);
+  if (paymentMode === "split") {
+    setCashAmount(finalTotal);
+    setUpiAmount(0);
+  }
+}, [paymentMode]);
+
+/* ================= SPLIT LIVE UPDATE ================= */
+
+useEffect(() => {
+  if (paymentMode === "split") {
+    const remaining = finalTotal - cashAmount;
+    setUpiAmount(remaining > 0 ? remaining : 0);
+  }
+}, [cashAmount, finalTotal, paymentMode]);
 
   /* ---------------- ITEM LOGIC ---------------- */
 
@@ -273,6 +284,7 @@ export default function AddBill() {
           setDiscount={setDiscount}
           paymentMode={paymentMode}
           setPaymentMode={setPaymentMode}
+           setUpiAmount={setUpiAmount}
           cashAmount={cashAmount}
           setCashAmount={setCashAmount}
           upiAmount={upiAmount}
