@@ -141,20 +141,6 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           }}
         />
 
-        {/* STOCK STATUS */}
-        {stockQty !== null && (
-          <p className="text-xs mt-1">
-            {stockQty > 0 ? (
-              <span className="text-green-600">
-                In stock: {stockQty}
-              </span>
-            ) : (
-              <span className="text-orange-600">
-                ⚠ Sold without stock
-              </span>
-            )}
-          </p>
-        )}
 
         {/* SUGGESTIONS */}
         {suggestions.length > 0 && (
@@ -180,11 +166,27 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
                 }}
               >
                 {item.name}
+                        {/* STOCK STATUS */}
+        {stockQty !== null && (
+          <p className="text-xs mt-1">
+            {stockQty > 0 ? (
+              
+              <span className="text-green-600">
+              
                 {item.code && (
                   <span className="text-xs text-gray-500 ml-2">
                     ({item.code})
                   </span>
-                )}
+                )}  In stock: {stockQty}
+              </span>
+            ) : (
+              <span className="text-orange-600">
+                ⚠ Sold without stock
+              </span> 
+            )}
+          </p>
+        )}
+
               </li>
             ))}
           </ul>

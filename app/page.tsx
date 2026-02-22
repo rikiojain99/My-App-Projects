@@ -123,7 +123,7 @@ export default function Home() {
           <DashboardLink href="/bills/add-bill" icon="🧾" label="Add Bill" />
           <DashboardLink href="/bills/view-bills" icon="📂" label="View Bills" />
         </Section>
-
+      
         {/* INVENTORY */}
         <Section
           id="inventory"

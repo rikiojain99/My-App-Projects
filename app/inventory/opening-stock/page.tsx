@@ -39,18 +39,19 @@ export default function OpeningStockPage() {
           .map((r) => ({
             name:
               r["Item Name"] ||
-              r["Item"] ||
+              r["name"] ||
               r["Name"] ||
               r["item"],
-            qty: Number(
-              r["Quantity"] ||
-              r["Qty"] ||
-              r["quantity"]
-            ),
+            
             rate: Number(
-              r["Rate"] ||
+              r["rate"] ||
               r["Price"] ||
               r["rate"]
+            ),
+              qty: Number(
+              r["Quantity"] ||
+              r["qty"] ||
+              r["quantity"]
             ),
           }))
           .filter(

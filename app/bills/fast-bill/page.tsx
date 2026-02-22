@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import ItemNameInput from "@/components/billing/ItemNameInput";
+import ItemsTable from "@/components/billing/ItemsTable";
 import PaymentModal from "@/components/billing/PaymentModal";
 
 type Item = {
@@ -19,10 +19,10 @@ export default function FastBill() {
     { name: "", qty: 1, rate: 0, total: 0 },
   ]);
 
+  const [expanded, setExpanded] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
   const [message, setMessage] = useState("");
 
-  /* ✅ ADD DISCOUNT STATE (Missing Before) */
   const [discount, setDiscount] = useState(0);
 
   const [paymentMode, setPaymentMode] =
@@ -42,7 +42,6 @@ export default function FastBill() {
     [items]
   );
 
-  /* ✅ ADD FINAL TOTAL (Like AddBill) */
   const finalTotal = useMemo(
     () => Math.max(grandTotal - discount, 0),
     [grandTotal, discount]
@@ -127,7 +126,7 @@ export default function FastBill() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items,
-          total: finalTotal,   // ✅ use finalTotal
+          total: finalTotal,
           paymentMode,
           cashAmount,
           upiAmount,
@@ -147,7 +146,6 @@ export default function FastBill() {
       setCashAmount(0);
       setUpiAmount(0);
       setShowPayment(false);
-
     } catch {
       setMessage("❌ Something went wrong");
     }
@@ -157,80 +155,26 @@ export default function FastBill() {
 
   return (
     <ProtectedRoute>
-      <div className="max-w-4xl mx-auto p-6 bg-white border rounded-xl space-y-6">
+      <div className="max-w-5xl mx-auto bg-white border rounded-xl p-6 space-y-6 shadow-sm">
 
         <h1 className="text-2xl font-bold">
-          Fast Bill
+          Cash Bill
         </h1>
 
         {message && <p className="text-sm">{message}</p>}
 
-        <div className="space-y-4">
-          {items.map((item, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-12 gap-2 items-center"
-            >
-              <div className="col-span-1">
-                {index + 1}.
-              </div>
+        {/* ✅ REUSED ITEMS TABLE COMPONENT */}
+        <ItemsTable
+          items={items}
+          expanded={expanded}
+          toggle={() => setExpanded((p) => !p)}
+          itemRefs={itemRefs}
+          onItemChange={handleItemChange}
+          onAddItem={addItem}
+          onRemoveItem={removeItem}
+        />
 
-              <div className="col-span-4">
-                <ItemNameInput
-                  ref={(el: HTMLInputElement | null) => {
-                    itemRefs.current[index] = el;
-                  }}
-                  index={index}
-                  items={items}
-                  handleItemChange={handleItemChange}
-                />
-              </div>
-
-              <input
-                name="qty"
-                type="number"
-                value={item.qty}
-                onChange={(e) =>
-                  handleItemChange(index, e)
-                }
-                className="col-span-2 border p-2"
-              />
-
-              <input
-                name="rate"
-                type="number"
-                value={item.rate}
-                onChange={(e) =>
-                  handleItemChange(index, e)
-                }
-                className="col-span-2 border p-2"
-              />
-
-              <div className="col-span-2 text-right font-semibold">
-                ₹ {item.total}
-              </div>
-
-              <div className="col-span-1 text-right">
-                {items.length > 1 && (
-                  <button
-                    onClick={() => removeItem(index)}
-                    className="text-red-500"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <button
-          onClick={addItem}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          + Add Item
-        </button>
-
+        {/* TOTAL */}
         <div className="flex justify-between border-t pt-4 text-lg font-bold">
           <span>Total</span>
           <span>₹ {finalTotal}</span>
@@ -267,3 +211,4 @@ export default function FastBill() {
     </ProtectedRoute>
   );
 }
+  

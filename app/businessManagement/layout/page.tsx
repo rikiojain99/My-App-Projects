@@ -47,7 +47,16 @@ export default function Home() {
 
         <h1 className=" underline text-2xl font-semibold text-center">
          Business Management </h1>
+  <Section
+          id="vendor"
+          title="Vendor management"
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+        >
 
+          <DashboardLink href="/vendors/sale" icon="🏪" label="Vendor Sale" />
+          <DashboardLink href="/vendors/ledger" icon="📋" label="Vendor Ledger" />
+</Section>
     
 
 
