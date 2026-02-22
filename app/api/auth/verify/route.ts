@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSignedToken } from "@/lib/auth-token";
 
-const ADMIN_PASSKEY = process.env.ADMIN_PASSKEY || "admin123";
+const ADMIN_PASSKEY = process.env.ADMIN_PASSKEY;
 
 const EMPLOYEE_PASSKEYS = [
   process.env.EMPLOYEE_PASSKEY_1,
@@ -12,6 +12,13 @@ const EMPLOYEE_PASSKEYS = [
 
 export async function POST(req: Request) {
   try {
+    if (!ADMIN_PASSKEY) {
+      return NextResponse.json(
+        { ok: false, error: "Server misconfigured: ADMIN_PASSKEY missing" },
+        { status: 500 }
+      );
+    }
+
     const { passkey } = await req.json();
 
     let role: "admin" | "employee" | null = null;

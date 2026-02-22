@@ -1,6 +1,6 @@
 "use client";
 
-import { StockItem } from "@/app/inventory/add-stoock/page";
+import { StockItem } from "@/app/inventory/add-stock/page";
 import ItemNameInput from "./ItemNameInput";
 
 type Props = {
@@ -90,3 +90,4 @@ export default function ItemsSection({
     </>
   );
 }
+

@@ -37,19 +37,13 @@ export default function LowStockPage() {
         <div className="max-w-6xl mx-auto space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <h1 className="text-2xl font-bold text-black">
-              ⚠️ Low Stock Items
-            </h1>
-
-            <div className="text-sm text-gray-600">
-              Total Low Stock:{" "}
-              <span className="font-semibold text-red-600">
-                {items.length}
+              ⚠️ Low Stock Items  <span className="font-semibold text-red-600">
+               ( {items.length} )
               </span>
-            </div>
-          </div>
+            </h1> </div>
 
           {/* SEARCH */}
-          <div className="sticky top-16 z-10 bg-gray-50 pb-2">
+          <div className=" top-16 z-10 bg-gray-50 pb-2">
             <input
               type="text"
               placeholder="Search item name..."
@@ -79,7 +73,8 @@ export default function LowStockPage() {
                 key={item._id}
                 className="bg-white border rounded-xl p-4 flex justify-between items-center"
               >
-                <div>
+                <div> 
+                  
                   <p className="font-semibold text-black">
                     {item.itemName}
                   </p>
@@ -103,6 +98,7 @@ export default function LowStockPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-100 text-gray-700">
                 <tr>
+                  <th className="p-3 text-left">#</th>
                   <th className="p-3 text-left">Item Name</th>
                   <th className="p-3 text-center">Available Qty</th>
                   <th className="p-3 text-center">Status</th>
@@ -114,15 +110,20 @@ export default function LowStockPage() {
                     key={item._id}
                     className="border-t hover:bg-gray-50"
                   >
-                    <td className="p-3 font-medium text-black">
+  
+                    <td className="p-3 border font-medium text-black">
+                      {filtered.indexOf(item) + 1}
+                    </td>
+
+                    <td className="p-3 border font-medium text-black">
                       {item.itemName}
                     </td>
 
-                    <td className="p-3 text-center font-semibold text-red-600">
+                    <td className="p-3 border text-center font-semibold text-red-600">
                       {item.availableQty}
                     </td>
 
-                    <td className="p-3 text-center">
+                    <td className="p-3 border text-center">
                       <span className="px-3 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">
                         LOW
                       </span>
