@@ -70,6 +70,11 @@ export default function Header() {
     { label: "Business", path: "/businessManagement/layout", icon: "🏢" },
   ];
 
+  const isActivePath = (path: string) => {
+    if (path === "/") return pathname === "/";
+    return pathname === path || pathname.startsWith(path + "/");
+  };
+
   return (
     <>
       {/* ================= DESKTOP / TOP HEADER ================= */}
@@ -86,7 +91,7 @@ export default function Header() {
           {/* Nav Links */}
           <nav className="flex gap-1">
             {topNav.map((n) => {
-              const active = pathname === n.path || pathname.startsWith(n.path + "/");
+              const active = isActivePath(n.path);
               return (
                 <Link
                   key={n.path}
@@ -105,11 +110,11 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            {lowStockCount > 0 && (
+            {/* {lowStockCount > 0 && (
               <div className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100">
                 ⚠️ {lowStockCount} Low
               </div>
-            )}
+            )} */}
             <button
               onClick={handleLogout}
               className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors"
@@ -143,7 +148,7 @@ export default function Header() {
         <div className="flex justify-around items-center h-16 max-w-md mx-auto">
           
           {bottomNav.map((n) => {
-            const active = pathname === n.path || pathname.startsWith(n.path + "/");
+            const active = isActivePath(n.path);
             return (
               <Link
                 key={n.path}
@@ -152,9 +157,11 @@ export default function Header() {
                   active ? "text-blue-600 bg-blue-50" : "text-gray-500 hover:bg-gray-50"
                 }`}
               >
+                {/* Icon Container */}
                 <div className="text-xl mb-1 relative">
                   {n.icon}
                   
+                  {/* Low Stock Red Dot Badge */}
                   {n.alert && (
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -174,8 +181,7 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Spacer to prevent content from being hidden behind the bottom bar on mobile */}
-      <div className="md:hidden h-16" />
     </>
   );
 }
+

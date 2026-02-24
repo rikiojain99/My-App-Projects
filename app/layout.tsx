@@ -14,9 +14,10 @@ export default function RootLayout({
         <AuthProvider>
           <GlobalSplash />
           <Header />
-          <main>{children}</main>
+          <main className="pb-24 md:pb-0">{children}</main>
         </AuthProvider>
       </body>
     </html>
   );
 }
+
