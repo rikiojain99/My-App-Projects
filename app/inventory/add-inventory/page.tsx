@@ -10,7 +10,7 @@ export default function AddInventory() {
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [category, setCategory] = useState("");
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(0);
   const [rate, setRate] = useState(0);
   const [total, setTotal] = useState(0);
   const [suggestions, setSuggestions] = useState<ItemType[]>([]);
@@ -65,7 +65,7 @@ export default function AddInventory() {
         setName("");
         setType("");
         setCategory("");
-        setQty(1);
+        setQty(0);
         setRate(0);
       }
     } catch (err) {
@@ -117,8 +117,44 @@ export default function AddInventory() {
 
         <input type="text" placeholder="Type" value={type} onChange={(e) => setType(e.target.value)} className="w-full p-2 border rounded" />
         <input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-2 border rounded" />
-        <input type="number" placeholder="Qty" value={qty} onChange={(e) => setQty(Number(e.target.value))} min={1} className="w-full p-2 border rounded" required />
-        <input type="number" placeholder="Rate" value={rate} onChange={(e) => setRate(Number(e.target.value))} min={0} className="w-full p-2 border rounded" required />
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder="Qty"
+          value={qty === 0 ? "" : String(qty)}
+          onChange={(e) => setQty(Number(e.target.value.replace(/\D/g, "")) || 0)}
+          onKeyDown={(e) => {
+            if (e.ctrlKey || e.metaKey) return;
+            if (
+              !/^\d$/.test(e.key) &&
+              !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"].includes(e.key)
+            ) {
+              e.preventDefault();
+            }
+          }}
+          className="w-full p-2 border rounded"
+          required
+        />
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          placeholder="Rate"
+          value={rate === 0 ? "" : String(rate)}
+          onChange={(e) => setRate(Number(e.target.value.replace(/\D/g, "")) || 0)}
+          onKeyDown={(e) => {
+            if (e.ctrlKey || e.metaKey) return;
+            if (
+              !/^\d$/.test(e.key) &&
+              !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"].includes(e.key)
+            ) {
+              e.preventDefault();
+            }
+          }}
+          className="w-full p-2 border rounded"
+          required
+        />
 
         <div className="font-bold text-black">Total: {total}</div>
 

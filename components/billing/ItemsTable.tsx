@@ -90,18 +90,36 @@ export default function ItemsTable({
             {/* Quantity */}
             <input
               name="qty"
-              type="number"
-              value={item.qty}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={item.qty === 0 ? "" : String(item.qty)}
               onChange={(e) => onItemChange(i, e)}
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                if (!/^\d$/.test(e.key) &&
+                    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className="col-span-2 border rounded-lg p-2 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
 
             {/* Rate */}
             <input
               name="rate"
-              type="number"
-              value={item.rate}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={item.rate === 0 ? "" : String(item.rate)}
               onChange={(e) => onItemChange(i, e)}
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                if (!/^\d$/.test(e.key) &&
+                    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className="col-span-2 border rounded-lg p-2 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
 

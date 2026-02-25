@@ -32,11 +32,12 @@ export function openWhatsApp(bill: any) {
     paymentBlock = ` Paid in Cash: Rs.${finalTotal}`;
   }
 
-  const message = `
+ const message = `
  *Bill Estimate*
 -----------------------------
 
  Customer: *${customerName || "Valued Customer"}*
+ Customer Number: ${mobile || "N/A"}
  Date: ${date}
 
 -----------------------------

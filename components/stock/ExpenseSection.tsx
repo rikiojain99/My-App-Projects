@@ -15,11 +15,32 @@ export default function ExpenseSection({
         Additional Purchase Expense
       </label>
       <input
-        type="number"
-        value={extraExpense}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={extraExpense === 0 ? "" : String(extraExpense)}
         onChange={(e) =>
-          setExtraExpense(Number(e.target.value))
+          setExtraExpense(
+            Number(e.target.value.replace(/\D/g, "")) || 0
+          )
         }
+        onKeyDown={(e) => {
+          if (e.ctrlKey || e.metaKey) return;
+          if (
+            !/^\d$/.test(e.key) &&
+            ![
+              "Backspace",
+              "Delete",
+              "ArrowLeft",
+              "ArrowRight",
+              "Tab",
+              "Home",
+              "End",
+            ].includes(e.key)
+          ) {
+            e.preventDefault();
+          }
+        }}
         className="w-full p-3 border rounded"
         placeholder="Transport / Loading / Other"
       />

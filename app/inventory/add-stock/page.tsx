@@ -17,7 +17,7 @@ export default function Stock() {
   const [vendorName, setVendorName] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
   const [items, setItems] = useState<StockItem[]>([
-    { name: "", qty: 1, rate: 0, total: 0 },
+    { name: "", qty: 0, rate: 0, total: 0 },
   ]);
   const [message, setMessage] = useState("");
   const [extraExpense, setExtraExpense] = useState(0);
@@ -67,8 +67,13 @@ export default function Stock() {
     const newItems = [...items];
 
     if (name === "name") newItems[index].name = value;
-    if (name === "qty") newItems[index].qty = Number(value);
-    if (name === "rate") newItems[index].rate = Number(value);
+    if (name === "qty" || name === "rate") {
+      const digitsOnly = value.replace(/\D/g, "");
+      const numericValue = digitsOnly === "" ? 0 : Number(digitsOnly);
+
+      if (name === "qty") newItems[index].qty = numericValue;
+      if (name === "rate") newItems[index].rate = numericValue;
+    }
 
     newItems[index].total =
       newItems[index].qty * newItems[index].rate;
@@ -79,7 +84,7 @@ export default function Stock() {
   const addItem = () => {
     setItems([
       ...items,
-      { name: "", qty: 1, rate: 0, total: 0 },
+      { name: "", qty: 0, rate: 0, total: 0 },
     ]);
 
     setTimeout(() => {
@@ -115,7 +120,7 @@ export default function Stock() {
     setMessage("Stock added successfully");
     setVendorName("");
     setPurchaseDate(new Date().toISOString().slice(0, 10));
-    setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
+    setItems([{ name: "", qty: 0, rate: 0, total: 0 }]);
     setExtraExpense(0);
   };
 

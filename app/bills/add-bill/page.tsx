@@ -32,7 +32,7 @@ export default function AddBill() {
   const [upiAccount, setUpiAccount] = useState("");
 
   const [items, setItems] = useState<Item[]>([
-    { name: "", qty: 1, rate: 0, total: 0 },
+    { name: "", qty: 0, rate: 0, total: 0 },
   ]);
 
   const [billNo] = useState(`BILL-${Date.now()}`);
@@ -129,8 +129,13 @@ useEffect(() => {
     const newItems = [...items];
 
     if (name === "name") newItems[index].name = value;
-    if (name === "qty") newItems[index].qty = Number(value);
-    if (name === "rate") newItems[index].rate = Number(value);
+    if (name === "qty" || name === "rate") {
+      const digitsOnly = value.replace(/\D/g, "");
+      const numericValue = digitsOnly === "" ? 0 : Number(digitsOnly);
+
+      if (name === "qty") newItems[index].qty = numericValue;
+      if (name === "rate") newItems[index].rate = numericValue;
+    }
 
     newItems[index].total =
       newItems[index].qty * newItems[index].rate;
@@ -139,7 +144,7 @@ useEffect(() => {
   };
 
   const addItem = () => {
-    setItems([...items, { name: "", qty: 1, rate: 0, total: 0 }]);
+    setItems([...items, { name: "", qty: 0, rate: 0, total: 0 }]);
     setTimeout(() => {
       itemRefs.current[itemRefs.current.length - 1]?.focus();
     }, 0);
@@ -191,6 +196,7 @@ useEffect(() => {
 
       setSavedBillData({
         billNo,
+        customerName: customer.name,
         mobile: customer.mobile,
         items,
         grandTotal,
@@ -205,7 +211,7 @@ useEffect(() => {
 
       // reset form
       setCustomer({ name: "", type: "", city: "", mobile: "" });
-      setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
+      setItems([{ name: "", qty: 0, rate: 0, total: 0 }]);
       setDiscount(0);
       setCashAmount(0);
       setUpiAmount(0);

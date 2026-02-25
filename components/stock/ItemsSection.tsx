@@ -43,21 +43,59 @@ export default function ItemsSection({
 
             <input
               name="qty"
-              type="number"
-              value={item.qty}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={item.qty === 0 ? "" : String(item.qty)}
               onChange={(e) =>
                 handleItemChange(index, e)
               }
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                if (
+                  !/^\d$/.test(e.key) &&
+                  ![
+                    "Backspace",
+                    "Delete",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Tab",
+                    "Home",
+                    "End",
+                  ].includes(e.key)
+                ) {
+                  e.preventDefault();
+                }
+              }}
               className="col-span-2 p-2 border rounded"
             />
 
             <input
               name="rate"
-              type="number"
-              value={item.rate}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={item.rate === 0 ? "" : String(item.rate)}
               onChange={(e) =>
                 handleItemChange(index, e)
               }
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                if (
+                  !/^\d$/.test(e.key) &&
+                  ![
+                    "Backspace",
+                    "Delete",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Tab",
+                    "Home",
+                    "End",
+                  ].includes(e.key)
+                ) {
+                  e.preventDefault();
+                }
+              }}
               className="col-span-2 p-2 border rounded"
             />
 

@@ -54,6 +54,15 @@ export default function PaymentModal({
   );
 
   const upiAccounts = ["ID-1", "ID-2", "ID-3"];
+  const numberKeys = [
+    "Backspace",
+    "Delete",
+    "ArrowLeft",
+    "ArrowRight",
+    "Tab",
+    "Home",
+    "End",
+  ];
 
   /* ================= SYNC DISCOUNT ================= */
 
@@ -127,11 +136,19 @@ export default function PaymentModal({
             Discount (₹)
           </label>
           <input
-            type="number"
-            value={localDiscount}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={localDiscount === "0" ? "" : localDiscount}
             onChange={(e) =>
-              setLocalDiscount(e.target.value)
+              setLocalDiscount(e.target.value.replace(/\D/g, ""))
             }
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) return;
+              if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
             className="w-full border rounded-lg p-2"
           />
         </div>
@@ -159,11 +176,21 @@ export default function PaymentModal({
         {(paymentMode === "cash" ||
           paymentMode === "split") && (
           <input
-            type="number"
-            value={cashAmount}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={cashAmount === 0 ? "" : String(cashAmount)}
             onChange={(e) =>
-              setCashAmount(Number(e.target.value))
+              setCashAmount(
+                Number(e.target.value.replace(/\D/g, "")) || 0
+              )
             }
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) return;
+              if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
             className="w-full border rounded-lg p-2"
             placeholder="Cash Amount"
           />

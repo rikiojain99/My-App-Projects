@@ -65,9 +65,30 @@ export default function AddExpense() {
         />
 
         <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={amount === 0 ? "" : String(amount)}
+          onChange={(e) =>
+            setAmount(Number(e.target.value.replace(/\D/g, "")) || 0)
+          }
+          onKeyDown={(e) => {
+            if (e.ctrlKey || e.metaKey) return;
+            if (
+              !/^\d$/.test(e.key) &&
+              ![
+                "Backspace",
+                "Delete",
+                "ArrowLeft",
+                "ArrowRight",
+                "Tab",
+                "Home",
+                "End",
+              ].includes(e.key)
+            ) {
+              e.preventDefault();
+            }
+          }}
           placeholder="Amount"
           className="w-full border p-2 rounded"
           required

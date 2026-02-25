@@ -33,6 +33,15 @@ export default function VendorPaymentModal({
   onBack,
   onSave,
 }: Props) {
+  const numberKeys = [
+    "Backspace",
+    "Delete",
+    "ArrowLeft",
+    "ArrowRight",
+    "Tab",
+    "Home",
+    "End",
+  ];
 
   /* ================= AUTO VALIDATION ================= */
 
@@ -76,11 +85,21 @@ export default function VendorPaymentModal({
             Discount (₹)
           </label>
           <input
-            type="number"
-            value={discount}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={discount === 0 ? "" : String(discount)}
             onChange={(e) =>
-              setDiscount(Number(e.target.value) || 0)
+              setDiscount(
+                Number(e.target.value.replace(/\D/g, "")) || 0
+              )
             }
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) return;
+              if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
             className="w-full border rounded-lg p-2"
             placeholder="Enter discount"
           />
@@ -102,11 +121,21 @@ export default function VendorPaymentModal({
             Cash Received
           </label>
           <input
-            type="number"
-            value={cashPaid}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={cashPaid === 0 ? "" : String(cashPaid)}
             onChange={(e) =>
-              setCashPaid(Number(e.target.value) || 0)
+              setCashPaid(
+                Number(e.target.value.replace(/\D/g, "")) || 0
+              )
             }
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) return;
+              if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
             className="w-full border rounded-lg p-2"
             placeholder="Enter cash received"
           />

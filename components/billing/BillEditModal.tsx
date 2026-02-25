@@ -15,6 +15,15 @@ export default function BillEditModal({
   }, [bill]);
 
   if (!editingBill) return null;
+  const numberKeys = [
+    "Backspace",
+    "Delete",
+    "ArrowLeft",
+    "ArrowRight",
+    "Tab",
+    "Home",
+    "End",
+  ];
 
   /* ================= ITEM QTY CHANGE ================= */
   const handleQtyChange = (index: number, qty: number) => {
@@ -105,11 +114,22 @@ export default function BillEditModal({
               <div className="flex-1 text-sm">{it.name}</div>
 
               <input
-                type="number"
-                value={it.qty}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={it.qty === 0 ? "" : String(it.qty)}
                 onChange={(e) =>
-                  handleQtyChange(i, Number(e.target.value))
+                  handleQtyChange(
+                    i,
+                    Number(e.target.value.replace(/\D/g, "")) || 0
+                  )
                 }
+                onKeyDown={(e) => {
+                  if (e.ctrlKey || e.metaKey) return;
+                  if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-20 border p-1 rounded"
               />
 
@@ -126,11 +146,21 @@ export default function BillEditModal({
             Discount
           </label>
           <input
-            type="number"
-            value={editingBill.discount || 0}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={editingBill.discount ? String(editingBill.discount) : ""}
             onChange={(e) =>
-              handleDiscountChange(Number(e.target.value))
+              handleDiscountChange(
+                Number(e.target.value.replace(/\D/g, "")) || 0
+              )
             }
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) return;
+              if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
             className="w-full border p-2 rounded"
           />
         </div>
@@ -157,15 +187,23 @@ export default function BillEditModal({
 
           {editingBill.paymentMode !== "upi" && (
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               placeholder="Cash Amount"
-              value={editingBill.cashAmount || 0}
+              value={editingBill.cashAmount ? String(editingBill.cashAmount) : ""}
               onChange={(e) =>
                 setEditingBill({
                   ...editingBill,
-                  cashAmount: Number(e.target.value),
+                  cashAmount: Number(e.target.value.replace(/\D/g, "")) || 0,
                 })
               }
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className="w-full border p-2 rounded"
             />
           )}
@@ -173,15 +211,23 @@ export default function BillEditModal({
           {editingBill.paymentMode !== "cash" && (
             <>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="UPI Amount"
-                value={editingBill.upiAmount || 0}
+                value={editingBill.upiAmount ? String(editingBill.upiAmount) : ""}
                 onChange={(e) =>
                   setEditingBill({
                     ...editingBill,
-                    upiAmount: Number(e.target.value),
+                    upiAmount: Number(e.target.value.replace(/\D/g, "")) || 0,
                   })
                 }
+                onKeyDown={(e) => {
+                  if (e.ctrlKey || e.metaKey) return;
+                  if (!/^\d$/.test(e.key) && !numberKeys.includes(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-full border p-2 rounded"
               />
 

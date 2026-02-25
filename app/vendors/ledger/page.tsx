@@ -138,13 +138,32 @@ export default function VendorLedgerPage() {
               </h2>
 
               <input
-                type="number"
-                value={paymentAmount}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={paymentAmount === 0 ? "" : String(paymentAmount)}
                 onChange={(e) =>
                   setPaymentAmount(
-                    Number(e.target.value)
+                    Number(e.target.value.replace(/\D/g, "")) || 0
                   )
                 }
+                onKeyDown={(e) => {
+                  if (e.ctrlKey || e.metaKey) return;
+                  if (
+                    !/^\d$/.test(e.key) &&
+                    ![
+                      "Backspace",
+                      "Delete",
+                      "ArrowLeft",
+                      "ArrowRight",
+                      "Tab",
+                      "Home",
+                      "End",
+                    ].includes(e.key)
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
                 placeholder="Enter amount"
                 className="w-full border p-2 rounded"
               />

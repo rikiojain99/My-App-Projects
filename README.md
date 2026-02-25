@@ -1,4 +1,4 @@
-# SJ Light House - Business Management App
+# Business Management App
 
 Internal business app for billing, inventory, manufacturing, vendor ledger, expenses, and reports.
 
