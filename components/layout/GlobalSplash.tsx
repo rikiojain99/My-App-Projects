@@ -65,25 +65,21 @@
 // }
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 export default function GlobalSplash() {
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const pathname = usePathname();
-  const firstLoadRef = useRef(true);
 
   useEffect(() => {
     setVisible(true);
     setFadeOut(false);
 
-    const isFirstLoad = firstLoadRef.current;
-    firstLoadRef.current = false;
-
-    // First load gets a slightly longer splash, route hops stay very quick.
-    const fadeDelay = isFirstLoad ? 180 : 70;
-    const removeDelay = isFirstLoad ? 300 : 140;
+    // Keep splash visible for at least 1 second on page transitions.
+    const fadeDelay = 1050;
+    const removeDelay = 1000;
 
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
@@ -103,7 +99,7 @@ export default function GlobalSplash() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center -mt-32 justify-center bg-gray-200/90 transition-all duration-200 ${
+      className={`pointer-events-none fixed left-0 right-0 top-14 bottom-16 md:top-16 md:bottom-0 z-40 flex items-center justify-center bg-gray-300/90 px-4 transition-all duration-200 ${
         fadeOut ? "opacity-0 scale-95" : "opacity-100 scale-100"
       }`}
     >
@@ -111,9 +107,9 @@ export default function GlobalSplash() {
         <img
           src="/Sj.png"
           alt="Logo"
-          className="h-72 w-72 animate-logo"
+          className="h-40 w-40 md:h-72 md:w-72 animate-logo"
         />
-        <h1 className="text-white text-2xl font-semibold tracking-wide -mt-16 ">
+        <h1 className="text-white text-lg md:text-2xl font-semibold tracking-wide -mt-10 md:-mt-16">
           SJ Light House
         </h1>
       </div>
