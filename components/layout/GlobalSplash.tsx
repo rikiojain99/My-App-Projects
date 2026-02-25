@@ -65,26 +65,33 @@
 // }
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 export default function GlobalSplash() {
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const pathname = usePathname();
+  const firstLoadRef = useRef(true);
 
   useEffect(() => {
     setVisible(true);
     setFadeOut(false);
 
-    // Start fade out slightly before removal
+    const isFirstLoad = firstLoadRef.current;
+    firstLoadRef.current = false;
+
+    // First load gets a slightly longer splash, route hops stay very quick.
+    const fadeDelay = isFirstLoad ? 180 : 70;
+    const removeDelay = isFirstLoad ? 300 : 140;
+
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 100); // start fade at 1.2s
+    }, fadeDelay);
 
     const removeTimer = setTimeout(() => {
       setVisible(false);
-    }, 200); // fully remove at 1.7s
+    }, removeDelay);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -96,7 +103,7 @@ export default function GlobalSplash() {
 
   return (
     <div
-      className={`fixed inset-0 z-\[9999\] flex items-center -mt-32 justify-center bg-gray-200 transition-all duration-500 ${
+      className={`fixed inset-0 z-[9999] flex items-center -mt-32 justify-center bg-gray-200/90 transition-all duration-200 ${
         fadeOut ? "opacity-0 scale-95" : "opacity-100 scale-100"
       }`}
     >

@@ -8,7 +8,6 @@ import LowStockBanner from "@/components/LowStockBanner";
 export default function Home() {
   const { authenticated, role, login } = useAuth();
 
-  const [loading, setLoading] = useState(true);
   const [passkey, setPasskey] = useState("");
   const [error, setError] = useState("");
 
@@ -19,12 +18,6 @@ export default function Home() {
 
   // 🔥 Only one section open
   const [openSection, setOpenSection] = useState<string | null>(null);
-
-  /* ---------------- LOADING ---------------- */
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
 
   /* ---------------- FETCH COUNTS ---------------- */
   useEffect(() => {
@@ -51,12 +44,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (!authenticated && !loading && inputRef.current) {
+    if (!authenticated && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [authenticated, loading]);
-
-  if (loading) return null;
+  }, [authenticated]);
 
   /* ---------------- LOGIN SCREEN ---------------- */
   if (!authenticated) {
