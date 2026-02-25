@@ -80,11 +80,11 @@ export default function GlobalSplash() {
     // Start fade out slightly before removal
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 1500); // start fade at 1.2s
+    }, 100); // start fade at 1.2s
 
     const removeTimer = setTimeout(() => {
       setVisible(false);
-    }, 2000); // fully remove at 1.7s
+    }, 200); // fully remove at 1.7s
 
     return () => {
       clearTimeout(fadeTimer);
