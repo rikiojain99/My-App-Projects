@@ -1,24 +1,35 @@
 import Item from "@/models/Item";
 import ItemStock from "@/models/ItemStock";
+import type { ClientSession } from "mongoose";
 
 /* =====================================================
    Ensure Items + Stock Exist
 ===================================================== */
-export async function ensureItemsExist(items: any[]) {
+export async function ensureItemsExist(
+  items: any[],
+  session?: ClientSession
+) {
   for (const it of items) {
     await Item.updateOne(
       { name: it.name },
       { $setOnInsert: { name: it.name } },
-      { upsert: true }
+      { upsert: true, session }
     );
 
-    const stock = await ItemStock.findOne({ itemName: it.name });
+    const stock = await ItemStock.findOne({
+      itemName: it.name,
+    }).session(session || null);
 
     if (!stock) {
-      await ItemStock.create({
-        itemName: it.name,
-        availableQty: 0,
-      });
+      await ItemStock.create(
+        [
+          {
+            itemName: it.name,
+            availableQty: 0,
+          },
+        ],
+        { session }
+      );
     }
   }
 }
@@ -26,9 +37,14 @@ export async function ensureItemsExist(items: any[]) {
 /* =====================================================
    Validate Stock
 ===================================================== */
-export async function validateStock(items: any[]) {
+export async function validateStock(
+  items: any[],
+  session?: ClientSession
+) {
   for (const it of items) {
-    const stock = await ItemStock.findOne({ itemName: it.name });
+    const stock = await ItemStock.findOne({
+      itemName: it.name,
+    }).session(session || null);
 
     if (
       stock &&
@@ -43,9 +59,14 @@ export async function validateStock(items: any[]) {
 /* =====================================================
    Deduct Stock
 ===================================================== */
-export async function deductStock(items: any[]) {
+export async function deductStock(
+  items: any[],
+  session?: ClientSession
+) {
   for (const it of items) {
-    const stock = await ItemStock.findOne({ itemName: it.name });
+    const stock = await ItemStock.findOne({
+      itemName: it.name,
+    }).session(session || null);
 
     if (stock && stock.availableQty > 0) {
       await ItemStock.findOneAndUpdate(
@@ -53,7 +74,8 @@ export async function deductStock(items: any[]) {
         {
           $inc: { availableQty: -it.qty },
           $set: { lastUpdated: new Date() },
-        }
+        },
+        { session }
       );
     }
   }

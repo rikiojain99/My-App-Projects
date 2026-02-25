@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose, { type ClientSession } from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import { createBill } from "@/lib/billing/createBill";
 
@@ -6,23 +7,168 @@ import Bill from "@/models/Bill";
 import Customer from "@/models/Customer";
 import ItemStock from "@/models/ItemStock";
 
+const isTransactionUnsupported = (err: any) => {
+  const msg = String(err?.message || "");
+  return (
+    msg.includes("Transaction numbers are only allowed") ||
+    msg.includes("replica set member or mongos")
+  );
+};
+
+const errorResponse = (err: any) => {
+  const message = String(err?.message || "Something went wrong");
+  let status = 500;
+
+  if (message.includes("Insufficient stock")) status = 400;
+  else if (message.includes("not found")) status = 404;
+  else if (
+    message.includes("duplicate key") ||
+    message.includes("E11000")
+  ) {
+    status = 409;
+  }
+
+  return NextResponse.json({ error: message }, { status });
+};
+
+const aggregateItemQty = (
+  items: Array<{ name: string; qty: number }>
+) => {
+  const map: Record<string, number> = {};
+  for (const item of items || []) {
+    const name = (item?.name || "").trim();
+    if (!name) continue;
+    map[name] = (map[name] || 0) + Number(item.qty || 0);
+  }
+  return map;
+};
+
+async function applyBillUpdateWithStockSync({
+  billId,
+  updates,
+  customerUpdates,
+  session,
+}: {
+  billId: string;
+  updates: any;
+  customerUpdates?: any;
+  session?: ClientSession;
+}) {
+  const oldBillQuery = Bill.findById(billId);
+  if (session) oldBillQuery.session(session);
+  const oldBill = await oldBillQuery;
+
+  if (!oldBill) {
+    throw new Error("Bill not found");
+  }
+
+  const oldQtyMap = aggregateItemQty(oldBill.items || []);
+  const newQtyMap = aggregateItemQty(updates?.items || []);
+  const itemNames = new Set([
+    ...Object.keys(oldQtyMap),
+    ...Object.keys(newQtyMap),
+  ]);
+
+  for (const itemName of itemNames) {
+    const oldQty = oldQtyMap[itemName] || 0;
+    const newQty = newQtyMap[itemName] || 0;
+    const delta = newQty - oldQty;
+
+    if (delta === 0) continue;
+
+    const stockQuery = ItemStock.findOne({ itemName });
+    if (session) stockQuery.session(session);
+    const stock = await stockQuery;
+
+    if (delta > 0) {
+      if (
+        stock &&
+        stock.availableQty > 0 &&
+        stock.availableQty < delta
+      ) {
+        throw new Error(`Insufficient stock for ${itemName}`);
+      }
+
+      if (stock && stock.availableQty > 0) {
+        await ItemStock.updateOne(
+          { itemName },
+          {
+            $inc: { availableQty: -delta },
+            $set: { lastUpdated: new Date() },
+          },
+          { session }
+        );
+      }
+    } else {
+      if (stock) {
+        await ItemStock.updateOne(
+          { itemName },
+          {
+            $inc: { availableQty: Math.abs(delta) },
+            $set: { lastUpdated: new Date() },
+          },
+          { session }
+        );
+      }
+    }
+  }
+
+  const updatedBill = await Bill.findByIdAndUpdate(
+    billId,
+    {
+      ...updates,
+      paymentMode: updates.paymentMode,
+      cashAmount: updates.cashAmount,
+      upiAmount: updates.upiAmount,
+      upiId: updates.upiId,
+      upiAccount: updates.upiAccount,
+    },
+    { new: true, session }
+  );
+
+  if (!updatedBill) {
+    throw new Error("Bill not found");
+  }
+
+  if (customerUpdates) {
+    await Customer.findByIdAndUpdate(
+      updatedBill.customerId,
+      customerUpdates,
+      { session }
+    );
+  }
+
+  return updatedBill;
+}
+
 /* =====================================================
    CREATE BILL
 ===================================================== */
 export async function POST(req: Request) {
+  await dbConnect();
+  const body = await req.json();
+
+  const session = await mongoose.startSession();
   try {
-    await dbConnect();
-    const body = await req.json();
+    let createdBill: any = null;
 
-    const bill = await createBill(body);
+    await session.withTransaction(async () => {
+      createdBill = await createBill(body, session);
+    });
 
-    return NextResponse.json(bill, { status: 201 });
+    if (!createdBill) {
+      throw new Error("Bill create failed");
+    }
+
+    return NextResponse.json(createdBill, { status: 201 });
   } catch (err: any) {
-    console.error("Bill save failed:", err.message);
-    return NextResponse.json(
-      { error: err.message },
-      { status: 500 }
-    );
+    if (isTransactionUnsupported(err)) {
+      const createdBill = await createBill(body);
+      return NextResponse.json(createdBill, { status: 201 });
+    }
+    return errorResponse(err);
+  } finally {
+    session.endSession();
   }
 }
 
@@ -43,11 +189,8 @@ export async function GET(req: Request) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  let query: any = { deleted: false };
+  const query: any = { deleted: false };
 
-  /* =====================================================
-     1️⃣ MOBILE FILTER (FOR PREVIOUS BILLS MODAL)
-  ===================================================== */
   if (mobile && mobile.trim().length === 10) {
     const customer = await Customer.findOne({
       mobile: mobile.trim(),
@@ -68,11 +211,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ bills });
   }
 
-  /* =====================================================
-     2️⃣ SMART SEARCH (DASHBOARD SEARCH)
-  ===================================================== */
   if (search && search.length >= 3) {
-    // First find matching customers
     const customers = await Customer.find({
       $or: [
         { name: { $regex: search, $options: "i" } },
@@ -82,22 +221,19 @@ export async function GET(req: Request) {
     }).select("_id");
 
     const customerIds = customers.map((c) => c._id);
-
     query.customerId = { $in: customerIds };
   }
 
-  /* =====================================================
-     3️⃣ DATE FILTER
-  ===================================================== */
   if (from || to) {
     query.createdAt = {};
     if (from) query.createdAt.$gte = new Date(from);
-    if (to) query.createdAt.$lte = new Date(to);
+    if (to) {
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      query.createdAt.$lte = end;
+    }
   }
 
-  /* =====================================================
-     4️⃣ PAGINATION
-  ===================================================== */
   const bills = await Bill.find(query)
     .populate("customerId")
     .sort({ createdAt: -1 })
@@ -110,70 +246,56 @@ export async function GET(req: Request) {
     bills,
     totalPages: Math.ceil(totalBills / limit),
     currentPage: page,
+    totalBills,
   });
 }
 
 /* =====================================================
-   UPDATE BILL (WITH PAYMENT EDIT SUPPORT)
+   UPDATE BILL (ATOMIC STOCK + BILL UPDATE)
 ===================================================== */
 export async function PUT(req: Request) {
   await dbConnect();
   const data = await req.json();
-
   const { billId, updates, customerUpdates } = data;
 
-  const oldBill = await Bill.findById(billId);
-  if (!oldBill) {
-    return NextResponse.json({ error: "Bill not found" }, { status: 404 });
-  }
+  const session = await mongoose.startSession();
+  try {
+    let updatedBillId = "";
 
-  /* ================= RESTORE OLD STOCK ================= */
-  for (const it of oldBill.items) {
-    await ItemStock.findOneAndUpdate(
-      { itemName: it.name },
-      { $inc: { availableQty: it.qty } }
-    );
-  }
+    await session.withTransaction(async () => {
+      const updatedBill = await applyBillUpdateWithStockSync({
+        billId,
+        updates,
+        customerUpdates,
+        session,
+      });
 
-  /* ================= DEDUCT NEW STOCK ================= */
-  for (const it of updates.items) {
-    const stock = await ItemStock.findOne({ itemName: it.name });
+      updatedBillId = String(updatedBill._id);
+    });
 
-    if (stock && stock.availableQty > 0 && stock.availableQty < it.qty) {
-      return NextResponse.json(
-        { error: `Insufficient stock for ${it.name}` },
-        { status: 400 }
-      );
+    if (!updatedBillId) {
+      throw new Error("Bill not found");
     }
 
-    if (stock && stock.availableQty > 0) {
-      await ItemStock.findOneAndUpdate(
-        { itemName: it.name },
-        { $inc: { availableQty: -it.qty } }
-      );
-    }
-  }
-
-  /* ================= UPDATE BILL ================= */
-  const updatedBill = await Bill.findByIdAndUpdate(
-    billId,
-    {
-      ...updates,
-      paymentMode: updates.paymentMode,
-      cashAmount: updates.cashAmount,
-      upiAmount: updates.upiAmount,
-      upiId: updates.upiId,
-      upiAccount: updates.upiAccount,
-    },
-    { new: true }
-  ).populate("customerId");
-
-  if (customerUpdates) {
-    await Customer.findByIdAndUpdate(
-      updatedBill!.customerId,
-      customerUpdates
+    const result = await Bill.findById(updatedBillId).populate(
+      "customerId"
     );
-  }
 
-  return NextResponse.json(updatedBill);
+    return NextResponse.json(result);
+  } catch (err: any) {
+    if (isTransactionUnsupported(err)) {
+      const updatedBill = await applyBillUpdateWithStockSync({
+        billId,
+        updates,
+        customerUpdates,
+      });
+      const result = await Bill.findById(updatedBill._id).populate(
+        "customerId"
+      );
+      return NextResponse.json(result);
+    }
+    return errorResponse(err);
+  } finally {
+    session.endSession();
+  }
 }
