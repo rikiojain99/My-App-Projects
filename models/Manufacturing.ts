@@ -10,6 +10,7 @@ export interface IManufacturing extends Document {
     cost: number;
   }[];
   totalCost: number;
+  costPerUnit: number;
   createdAt: Date;
 }
 
@@ -26,6 +27,7 @@ const ManufacturingSchema = new Schema(
       },
     ],
     totalCost: { type: Number, required: true },
+    costPerUnit: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 );
