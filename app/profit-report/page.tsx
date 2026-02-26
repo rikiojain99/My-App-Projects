@@ -197,7 +197,7 @@ export default function ProfitReport() {
                 <th className="border p-2">Item</th>
                 <th className="border p-2">Sold Qty</th>
                 <th className="border p-2">Revenue</th>
-                <th className="border p-2">Avg Cost</th>
+                <th className="border p-2">Unit Cost</th>
                 <th className="border p-2">Profit</th>
               </tr>
             </thead>
@@ -207,7 +207,13 @@ export default function ProfitReport() {
                   <td className="border p-2">{i.itemName}</td>
                   <td className="border p-2 text-center">{i.soldQty}</td>
                   <td className="border p-2 text-center">{formatINR(i.revenue)}</td>
-                  <td className="border p-2 text-center">{formatINR(i.avgCost)}</td>
+                  <td className="border p-2 text-center">
+                    {i.avgCost > 0 ? (
+                      formatINR(i.avgCost)
+                    ) : (
+                      <span className="text-gray-500">N/A</span>
+                    )}
+                  </td>
                   <td
                     className={`border p-2 text-center font-semibold ${
                       i.profit >= 0 ? "text-green-600" : "text-red-600"

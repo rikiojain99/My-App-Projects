@@ -3,8 +3,9 @@
 import { useAuth } from "@/components/AuthProvider";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+
 export default function Home() {
-  const { authenticated, role, login } = useAuth();
+  const { authenticated } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [passkey, setPasskey] = useState("");
@@ -15,7 +16,7 @@ export default function Home() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 🔥 Only one section open
+  // Only one section open
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   /* ---------------- LOADING ---------------- */
@@ -39,57 +40,58 @@ export default function Home() {
       .catch(() => {});
   }, [authenticated]);
 
-
-  /* ---------------- DASHBOARD ---------------- */
   return (
     <div className="min-h-screen bg-gray-100 p-4 pb-10">
       <div className="max-w-lg mx-auto space-y-6">
+        <h1 className="underline text-2xl font-semibold text-center">
+          Business Management
+        </h1>
 
-        <h1 className=" underline text-2xl font-semibold text-center">
-         Business Management </h1>
-  <Section
+        <Section
           id="vendor"
-          title="Vendor management"
+          title="Vendor Management"
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
+          <DashboardLink href="/vendors/sale" icon="VN" label="Vendor Sale" />
+          <DashboardLink href="/vendors/ledger" icon="LG" label="Vendor Ledger" />
+        </Section>
 
-          <DashboardLink href="/vendors/sale" icon="🏪" label="Vendor Sale" />
-          <DashboardLink href="/vendors/ledger" icon="📋" label="Vendor Ledger" />
-</Section>
-    
+        <Section
+          id="inventory"
+          title="Inventory"
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+        >
+          <DashboardLink href="/inventory/available-stock" icon="ST" label="Available Stock" />
+          <DashboardLink href="/inventory/stock-holdings" icon="MG" label="Manage Stock Details" />
+          <DashboardLink href="/inventory/view-inventory" icon="IV" label="View Inventory" />
+        </Section>
 
-
-
-        {/* REPORTS */}
         <Section
           id="reports"
           title="Reports"
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/expenses/add-expense" icon="📊" label="Expense" />
-          <DashboardLink href="/reports/stockReport"  icon="📊" label="stock Report" />
-          {/* <DashboardLink href="/inventory/view-inventory"  icon="📊" label="View Inventory" /> */}
-          {/* <DashboardLink href="/stock-report" icon="📊" label="stock-report" /> */}
-          <DashboardLink href="/profit-report" icon="📊" label="Profit Report" />
-          {/* <DashboardLink href="/manufacturing/history" icon="📂" label="Manufacturing History" /> */}
+          <DashboardLink href="/profit-report" icon="PR" label="Profit Report" />
+          <DashboardLink href="/reports/stockReport" icon="SR" label="Stock Report" />
+          <DashboardLink href="/stock-report" icon="LGC" label="Stock Report (Legacy)" />
+          <DashboardLink href="/expenses/add-expense" icon="EX" label="Add Expense" />
         </Section>
 
-<Section
-          id="reports inventory"
-          title="Reports inventory"
+        <Section
+          id="manufacturing"
+          title="Manufacturing"
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/inventory/available-stock" icon="📊" label="Expense" />
-          <DashboardLink href="/reports/stockReport"  icon="📊" label="stock Report" />
-          <DashboardLink href="/inventory/view-inventory"  icon="📊" label="View Inventory" />
-          <DashboardLink href="/stock-report" icon="📊" label="stock-report" />
-          <DashboardLink href="/profit-report" icon="📊" label="Profit Report" />
-          <DashboardLink href="/manufacturing/history" icon="📂" label="Manufacturing History" />
+          <DashboardLink
+            href="/manufacturing/history"
+            icon="MF"
+            label="Manufacturing History"
+          />
         </Section>
-
       </div>
     </div>
   );
@@ -138,7 +140,6 @@ function Section({
 
   return (
     <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-      {/* HEADER */}
       <button
         onClick={toggle}
         className="w-full flex justify-between items-center px-4 py-3 font-semibold"
@@ -149,11 +150,10 @@ function Section({
             isOpen ? "rotate-180" : ""
           }`}
         >
-          ▼
+          v
         </span>
       </button>
 
-      {/* BODY */}
       <div
         className={`grid transition-all duration-300 ease-in-out ${
           isOpen
@@ -162,9 +162,7 @@ function Section({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-4 pb-4 space-y-2">
-            {children}
-          </div>
+          <div className="px-4 pb-4 space-y-2">{children}</div>
         </div>
       </div>
     </div>
@@ -189,8 +187,7 @@ function DashboardLink({
         <span>{icon}</span>
         {label}
       </span>
-      <span className="text-gray-400">›</span>
+      <span className="text-gray-400">&gt;</span>
     </Link>
   );
 }
-
