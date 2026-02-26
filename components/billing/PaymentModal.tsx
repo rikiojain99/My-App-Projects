@@ -27,7 +27,8 @@ type Props = {
   setUpiAccount: (v: string) => void;
 
   onBack: () => void;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
+  isSaving?: boolean;
 };
 
 export default function PaymentModal({
@@ -47,11 +48,13 @@ export default function PaymentModal({
   setUpiAccount,
   onBack,
   onSave,
+  isSaving = false,
 }: Props) {
 
   const [localDiscount, setLocalDiscount] = useState(
     discount.toString()
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const upiAccounts = ["ID-1", "ID-2", "ID-3"];
   const numberKeys = [
@@ -107,6 +110,18 @@ export default function PaymentModal({
       : paymentMode === "upi"
       ? upiAmount === finalTotal && upiAccount
       : cashAmount + upiAmount === finalTotal;
+  const saving = isSaving || isSubmitting;
+
+  const handleSave = async () => {
+    if (saving || !isValid) return;
+
+    try {
+      setIsSubmitting(true);
+      await onSave();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
@@ -139,6 +154,7 @@ export default function PaymentModal({
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
+            disabled={saving}
             value={localDiscount === "0" ? "" : localDiscount}
             onChange={(e) =>
               setLocalDiscount(e.target.value.replace(/\D/g, ""))
@@ -159,6 +175,7 @@ export default function PaymentModal({
             (m) => (
               <button
                 key={m}
+                disabled={saving}
                 onClick={() => setPaymentMode(m)}
                 className={`flex-1 py-2 rounded-lg text-sm ${
                   paymentMode === m
@@ -179,6 +196,7 @@ export default function PaymentModal({
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
+            disabled={saving}
             value={cashAmount === 0 ? "" : String(cashAmount)}
             onChange={(e) =>
               setCashAmount(
@@ -206,6 +224,7 @@ export default function PaymentModal({
             </div>
 
             <select
+              disabled={saving}
               value={upiAccount}
               onChange={(e) =>
                 setUpiAccount(e.target.value)
@@ -222,6 +241,7 @@ export default function PaymentModal({
 
             <input
               type="text"
+              disabled={saving}
               value={upiId}
               onChange={(e) =>
                 setUpiId(e.target.value)
@@ -234,24 +254,38 @@ export default function PaymentModal({
 
         <div className="flex gap-3">
           <button
+            disabled={saving}
             onClick={onBack}
-            className="flex-1 border rounded-lg py-2"
+            className={`flex-1 border rounded-lg py-2 ${
+              saving ? "opacity-60 cursor-not-allowed" : ""
+            }`}
           >
             Back
           </button>
 
           <button
-            disabled={!isValid}
-            onClick={onSave}
+            disabled={!isValid || saving}
+            onClick={handleSave}
             className={`flex-1 rounded-lg py-2 font-semibold ${
-              isValid
+              isValid && !saving
                 ? "bg-green-600 text-white"
                 : "bg-gray-300 text-gray-500"
             }`}
           >
-            Save Bill
+            {saving ? "Saving..." : "Save Bill"}
           </button>
         </div>
+
+        {saving && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500 text-center">
+              Saving bill, please wait...
+            </p>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+              <div className="h-full w-full bg-green-500 animate-pulse" />
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

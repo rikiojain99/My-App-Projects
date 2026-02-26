@@ -48,6 +48,7 @@ export default function AddBill() {
   /* ---------------- PAYMENT ---------------- */
 
   const [showPayment, setShowPayment] = useState(false);
+  const [isSavingBill, setIsSavingBill] = useState(false);
   const [discount, setDiscount] = useState(0);
 
   const [paymentMode, setPaymentMode] =
@@ -223,6 +224,17 @@ useEffect(() => {
     }
   };
 
+  const handleSaveBill = async () => {
+    if (isSavingBill) return;
+
+    setIsSavingBill(true);
+    try {
+      await saveBill();
+    } finally {
+      setIsSavingBill(false);
+    }
+  };
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -299,8 +311,29 @@ useEffect(() => {
           upiAccount={upiAccount}
           setUpiAccount={setUpiAccount}
           onBack={() => setShowPayment(false)}
-          onSave={saveBill}
+          onSave={handleSaveBill}
+          isSaving={isSavingBill}
         />
+      )}
+
+      {isSavingBill && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center px-4">
+          <div className="w-full max-w-xs rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src="/Sj.png"
+                alt="Saving bill"
+                className="h-20 w-20 animate-pulse"
+              />
+              <p className="text-sm font-medium text-gray-700">
+                Saving bill, please wait...
+              </p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                <div className="h-full w-full bg-blue-600 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ================= SUCCESS POPUP ================= */}
