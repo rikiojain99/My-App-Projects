@@ -74,20 +74,7 @@ export default function ItemsTable({
             <div className="col-span-1 text-center font-medium text-gray-600">
               {i + 1}
             </div>
-
-            {/* Item Name */}
-            <div className="col-span-4">
-              <ItemNameInput
-                ref={(el) => {
-                  itemRefs.current[i] = el;
-                }}
-                index={i}
-                items={items}
-                handleItemChange={onItemChange}
-              />
-            </div>
-
-            {/* Quantity */}
+                        {/* Quantity */}
             <input
               name="qty"
               type="text"
@@ -104,6 +91,20 @@ export default function ItemsTable({
               }}
               className="col-span-2 border rounded-lg p-2 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
+
+
+            {/* Item Name */}
+            <div className="col-span-4">
+              <ItemNameInput
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
+                index={i}
+                items={items}
+                handleItemChange={onItemChange}
+              />
+            </div>
+
 
             {/* Rate */}
             <input

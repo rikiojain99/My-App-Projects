@@ -8,7 +8,9 @@ import RawMaterialsTable, {
   type ManufacturingRawInput,
 } from "@/components/manufacturing/RawMaterialsTable";
 
-type RawInput = ManufacturingRawInput;
+type RawInput = ManufacturingRawInput & {
+  rowId: string;
+};
 type ItemLookup = ManufacturingLookupItem;
 
 type MessageState =
@@ -16,7 +18,13 @@ type MessageState =
   | { type: "error"; text: string }
   | null;
 
+const createRowId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
 const createEmptyRow = (): RawInput => ({
+  rowId: createRowId(),
   itemName: "",
   qtyUsed: 1,
   rate: 0,
@@ -41,8 +49,8 @@ const recalcRow = (row: RawInput): RawInput => {
 export default function ManufacturingCreate() {
   const [productName, setProductName] = useState("");
   const [producedQty, setProducedQty] = useState(1);
-  const prevProducedQty = useRef(1);
   const recipeReqRef = useRef(0);
+  const lookupReqRef = useRef(0);
 
   const [inputs, setInputs] = useState<RawInput[]>([
     createEmptyRow(),
@@ -81,25 +89,13 @@ export default function ManufacturingCreate() {
     setInputs((prev) =>
       prev.filter((_, rowIndex) => rowIndex !== index)
     );
+    setSuggestions([]);
+    setActiveRow((prev) => {
+      if (prev === null) return null;
+      if (prev === index) return null;
+      return prev > index ? prev - 1 : prev;
+    });
   };
-
-  useEffect(() => {
-    if (producedQty <= 0 || prevProducedQty.current <= 0) return;
-
-    const factor = producedQty / prevProducedQty.current;
-    if (factor === 1) return;
-
-    setInputs((prev) =>
-      prev.map((row) =>
-        recalcRow({
-          ...row,
-          qtyUsed: Number((row.qtyUsed * factor).toFixed(3)),
-        })
-      )
-    );
-
-    prevProducedQty.current = producedQty;
-  }, [producedQty]);
 
   const lookupItem = async (query: string, rowIndex: number) => {
     setActiveRow(rowIndex);
@@ -119,17 +115,23 @@ export default function ManufacturingCreate() {
     );
 
     if (query.trim().length < 2) {
+      lookupReqRef.current += 1;
       setSuggestions([]);
       return;
     }
 
     try {
+      const requestId = ++lookupReqRef.current;
       const res = await fetch(
         `/api/items/lookup?q=${encodeURIComponent(query)}`
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        setSuggestions([]);
+        return;
+      }
 
       const data: ItemLookup[] = await res.json();
+      if (requestId !== lookupReqRef.current) return;
       setSuggestions(Array.isArray(data) ? data : []);
     } catch {
       setSuggestions([]);
@@ -144,7 +146,7 @@ export default function ManufacturingCreate() {
       prev.map((row, i) =>
         i === rowIndex
           ? recalcRow({
-              ...createEmptyRow(),
+              ...row,
               itemName: suggestion.itemName,
               qtyUsed: 1,
               rate: Number(suggestion.rate || 0),
@@ -188,7 +190,6 @@ export default function ManufacturingCreate() {
             ? Number(recipe.producedQty)
             : 1;
 
-        prevProducedQty.current = baseQty;
         setProducedQty(baseQty);
         setInputs(
           recipe.inputs.map((row: any) =>
@@ -301,7 +302,6 @@ export default function ManufacturingCreate() {
 
       setProductName("");
       setProducedQty(1);
-      prevProducedQty.current = 1;
       setInputs([createEmptyRow()]);
       setSuggestions([]);
       setActiveRow(null);
@@ -330,6 +330,7 @@ export default function ManufacturingCreate() {
                 : "text-red-600"
             }`}
           >
+            {/*  */}
             {message.text}
           </p>
         )}

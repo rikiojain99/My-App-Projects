@@ -1,6 +1,7 @@
 "use client";
 
 export type ManufacturingRawInput = {
+  rowId?: string;
   itemName: string;
   qtyUsed: number;
   rate: number;
@@ -59,13 +60,14 @@ export default function RawMaterialsTable({
 
           <tbody>
             {inputs.map((row, i) => (
-              <tr key={`${i}-${row.itemName}`}>
+              <tr key={row.rowId ?? i}>
                 <td className="border p-2 relative">
                   <input
                     value={row.itemName ?? ""}
                     onChange={(e) =>
                       onLookupItem(e.target.value, i)
                     }
+                    placeholder="Type raw item name"
                     className="w-full border p-1 rounded"
                     autoComplete="off"
                     disabled={disabled}
@@ -150,6 +152,7 @@ export default function RawMaterialsTable({
                 <td className="border p-2 text-center">
                   {inputs.length > 1 && (
                     <button
+                      type="button"
                       onClick={() => onRemoveRow(i)}
                       className="text-red-600 disabled:text-gray-400"
                       disabled={disabled}
@@ -165,6 +168,7 @@ export default function RawMaterialsTable({
       </div>
 
       <button
+        type="button"
         onClick={onAddRow}
         className="mt-3 px-3 py-1 border rounded bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
         disabled={disabled}

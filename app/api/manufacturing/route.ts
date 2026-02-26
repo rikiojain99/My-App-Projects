@@ -178,9 +178,13 @@ async function createManufacturingEntry(
     session ? { upsert: true, session } : { upsert: true }
   );
 
-  const payloadInputs = normalizedInputs.map(
-    ({ fromStock: _fromStock, ...row }) => row
-  );
+  const payloadInputs = normalizedInputs.map((row) => ({
+    itemName: row.itemName,
+    qtyUsed: row.qtyUsed,
+    rate: row.rate,
+    cost: row.cost,
+    fromStock: row.fromStock,
+  }));
 
   const records = await Manufacturing.create(
     [

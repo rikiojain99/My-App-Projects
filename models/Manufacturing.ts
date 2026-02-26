@@ -8,6 +8,7 @@ export interface IManufacturing extends Document {
     qtyUsed: number;
     rate: number;
     cost: number;
+    fromStock?: boolean;
   }[];
   totalCost: number;
   costPerUnit: number;
@@ -24,6 +25,7 @@ const ManufacturingSchema = new Schema(
         qtyUsed: { type: Number, required: true },
         rate: { type: Number, required: true },
         cost: { type: Number, required: true },
+        fromStock: { type: Boolean, default: true },
       },
     ],
     totalCost: { type: Number, required: true },

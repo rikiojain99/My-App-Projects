@@ -53,8 +53,8 @@ export default function Home() {
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/vendors/sale" icon="VN" label="Vendor Sale" />
-          <DashboardLink href="/vendors/ledger" icon="LG" label="Vendor Ledger" />
+          <DashboardLink href="/vendors/sale" icon="🏪" label="Vendor Sale" />
+          <DashboardLink href="/vendors/ledger" icon="📋" label="Vendor Ledger" />
         </Section>
 
         <Section
@@ -63,9 +63,9 @@ export default function Home() {
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/inventory/available-stock" icon="ST" label="Available Stock" />
-          <DashboardLink href="/inventory/stock-holdings" icon="MG" label="Manage Stock Details" />
-          <DashboardLink href="/inventory/view-inventory" icon="IV" label="View Inventory" />
+          <DashboardLink href="/inventory/available-stock" icon="📦" label="Available Stock" />
+          <DashboardLink href="/inventory/stock-holdings" icon="🗂️" label="Manage Stock Details" />
+          <DashboardLink href="/inventory/view-inventory" icon="📑" label="View Inventory" />
         </Section>
 
         <Section
@@ -74,10 +74,10 @@ export default function Home() {
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/profit-report" icon="PR" label="Profit Report" />
-          <DashboardLink href="/reports/stockReport" icon="SR" label="Stock Report" />
-          <DashboardLink href="/stock-report" icon="LGC" label="Stock Report (Legacy)" />
-          <DashboardLink href="/expenses/add-expense" icon="EX" label="Add Expense" />
+          <DashboardLink href="/profit-report" icon="📈" label="Profit Report" />
+          <DashboardLink href="/reports/stockReport" icon="📊" label="Stock Report" />
+          <DashboardLink href="/stock-report" icon="🧾" label="Stock Report (Legacy)" />
+          <DashboardLink href="/expenses/add-expense" icon="💸" label="Add Expense" />
         </Section>
 
         <Section
@@ -88,7 +88,7 @@ export default function Home() {
         >
           <DashboardLink
             href="/manufacturing/history"
-            icon="MF"
+            icon="🏭"
             label="Manufacturing History"
           />
         </Section>
