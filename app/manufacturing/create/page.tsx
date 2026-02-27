@@ -330,8 +330,7 @@ export default function ManufacturingCreate() {
                 : "text-red-600"
             }`}
           >
-            {/*  */}
-            {message.text}
+              {message.text}
           </p>
         )}
 

@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useMemo,
   forwardRef,
 } from "react";
 
@@ -34,22 +35,50 @@ type Props = {
 /* ================= COMPONENT ================= */
 const ItemNameInput = forwardRef<HTMLInputElement, Props>(
   ({ index, items, handleItemChange }, ref) => {
-    const [query, setQuery] = useState<string>(
-      items[index].name
-    );
+    const currentItemName = items[index]?.name ?? "";
+    const [query, setQuery] =
+      useState<string>(currentItemName);
     const [suggestions, setSuggestions] =
       useState<ItemType[]>([]);
     const [stockQty, setStockQty] =
       useState<number | null>(null);
+    const [selectedCode, setSelectedCode] =
+      useState<string>("");
+    const [isFocused, setIsFocused] =
+      useState<boolean>(false);
 
     const suggestionTimer =
       useRef<NodeJS.Timeout | null>(null);
     const stockTimer =
       useRef<NodeJS.Timeout | null>(null);
+    const blurTimer =
+      useRef<NodeJS.Timeout | null>(null);
+
+    const resolvedCode = useMemo(() => {
+      if (selectedCode) return selectedCode;
+
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) return "";
+
+      const matched = suggestions.find((item) => {
+        const nameMatch =
+          item.name.trim().toLowerCase() === normalized;
+        const codeMatch =
+          item.code?.trim().toLowerCase() === normalized;
+        return nameMatch || codeMatch;
+      });
+
+      return matched?.code ?? "";
+    }, [query, selectedCode, suggestions]);
+
+    useEffect(() => {
+      setQuery(currentItemName);
+    }, [currentItemName]);
 
     /* ---------- ITEM SUGGESTIONS ---------- */
     useEffect(() => {
-      if (query.length < 3) {
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.length < 3) {
         setSuggestions([]);
         return;
       }
@@ -62,12 +91,16 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         async () => {
           try {
             const res = await fetch(
-              `/api/items?search=${query}`
+              `/api/items?search=${encodeURIComponent(
+                trimmedQuery
+              )}`
             );
             if (res.ok) {
               const data: ItemType[] =
                 await res.json();
-              setSuggestions(data);
+              setSuggestions(
+                Array.isArray(data) ? data : []
+              );
             }
           } catch {
             setSuggestions([]);
@@ -85,7 +118,8 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
 
     /* ---------- STOCK CHECK ---------- */
     useEffect(() => {
-      if (!query.trim()) {
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) {
         setStockQty(null);
         return;
       }
@@ -99,7 +133,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           try {
             const res = await fetch(
               `/api/stock/check?name=${encodeURIComponent(
-                query
+                trimmedQuery
               )}`
             );
             if (res.ok) {
@@ -121,6 +155,9 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         if (stockTimer.current) {
           clearTimeout(stockTimer.current);
         }
+        if (blurTimer.current) {
+          clearTimeout(blurTimer.current);
+        }
       };
     }, [query]);
 
@@ -132,28 +169,41 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           name="name"
           value={query}
           placeholder="Item name"
-          className="border p-2 w-full"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           onChange={(
             e: React.ChangeEvent<HTMLInputElement>
           ) => {
             setQuery(e.target.value);
+            setSelectedCode("");
             handleItemChange(index, e);
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            if (blurTimer.current) {
+              clearTimeout(blurTimer.current);
+            }
+          }}
+          onBlur={() => {
+            blurTimer.current = setTimeout(() => {
+              setIsFocused(false);
+              setSuggestions([]);
+            }, 120);
           }}
         />
 
-
         {/* SUGGESTIONS */}
-        {suggestions.length > 0 && (
-          <ul className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto">
+        {isFocused && suggestions.length > 0 && (
+          <ul className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-20 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
             {suggestions.map((item) => (
               <li
                 key={item._id}
-                className="px-2 py-1 cursor-pointer hover:bg-blue-100"
+                className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-blue-50"
                 onMouseDown={(
                   e: React.MouseEvent<HTMLLIElement>
                 ) => {
                   e.preventDefault();
                   setQuery(item.name);
+                  setSelectedCode(item.code ?? "");
 
                   handleItemChange(index, {
                     target: {
@@ -165,31 +215,39 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
                   setSuggestions([]);
                 }}
               >
-                {item.name}
-                        {/* STOCK STATUS */}
-        {stockQty !== null && (
-          <p className="text-xs mt-1">
-            {stockQty > 0 ? (
-              
-              <span className="text-green-600">
-              
-                {item.code && (
-                  <span className="text-xs text-gray-500 ml-2">
-                    ({item.code})
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {item.name}
                   </span>
-                )}  In stock: {stockQty}
-              </span>
-            ) : (
-              <span className="text-orange-600">
-                ⚠ Sold without stock
-              </span> 
-            )}
-          </p>
-        )}
-
+                  {item.code && (
+                    <span className="shrink-0 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500">
+                      {item.code}
+                    </span>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
+        )}
+
+        {/* STOCK STATUS */}
+        {stockQty !== null && (
+          <p className="mt-1 text-xs">
+            {stockQty > 0 ? (
+              <span className="text-green-700">
+                In stock: {stockQty}
+                {resolvedCode && (
+                  <span className="ml-2 text-gray-500">
+                    ({resolvedCode})
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="text-orange-600">
+                Warning: Sold without stock
+              </span>
+            )}
+          </p>
         )}
       </div>
     );
