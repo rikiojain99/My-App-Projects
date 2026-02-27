@@ -11,6 +11,11 @@ export default function ViewBills() {
   const [bills, setBills] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [showFilters, setShowFilters] = useState(true);
+  const [filteredSummary, setFilteredSummary] = useState({
+    totalBills: 0,
+    totalAmount: 0,
+  });
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -115,12 +120,23 @@ export default function ViewBills() {
 
       setPage(data.currentPage || 1);
       setHasMore(data.currentPage < data.totalPages);
+      setFilteredSummary({
+        totalBills: Number(data?.totalBills || 0),
+        totalAmount: Number(data?.totalAmount || 0),
+      });
     } catch (err) {
       console.error("Fetch bills error:", err);
     } finally {
       setLoading(false);
     }
   }
+
+  const formatINR = (value: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2,
+    }).format(value || 0);
 
   /* ================= RESET ON FILTER ================= */
   useEffect(() => {
@@ -166,7 +182,16 @@ export default function ViewBills() {
     <div className="min-h-screen bg-gray-100 pb-24">
       <div className="max-w-3xl mx-auto p-4 space-y-4">
 
-        <h1 className="text-2xl font-bold">Bills</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">Bills</h1>
+          <button
+            type="button"
+            onClick={() => setShowFilters((prev) => !prev)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            {showFilters ? "Hide Filters" : "Show Filters"}
+          </button>
+        </div>
 
         {/* ================= DAILY SALE SUMMARY ================= */}
 {/* ================= DAILY SALE SUMMARY ================= */}
@@ -178,52 +203,74 @@ export default function ViewBills() {
   />
 )}
 
-        {/* ================= SEARCH ================= */}
-        <input
-          type="text"
-          placeholder="Search name / mobile / city (min 3 chars)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 border rounded-md"
-        />
+        {showFilters && (
+          <>
+            {/* ================= SEARCH ================= */}
+            <input
+              type="text"
+              placeholder="Search name / mobile / city (min 3 chars)"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-md border p-3"
+            />
 
-        {/* ================= DATE FILTER ================= */}
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="border p-2 rounded"
-          />
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="border p-2 rounded"
-          />
-        </div>
+            {/* ================= DATE FILTER ================= */}
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="rounded border p-2"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="rounded border p-2"
+              />
+            </div>
 
-        <div className="flex gap-2 text-sm">
-          <button
-            onClick={() => setPreset("today")}
-            className="px-3 py-1 bg-blue-100 rounded"
-          >
-            Today
-          </button>
+            <div className="flex gap-2 text-sm">
+              <button
+                onClick={() => setPreset("today")}
+                className="rounded bg-blue-100 px-3 py-1"
+              >
+                Today
+              </button>
 
-          <button
-            onClick={() => setPreset("week")}
-            className="px-3 py-1 bg-blue-100 rounded"
-          >
-            This Week
-          </button>
+              <button
+                onClick={() => setPreset("week")}
+                className="rounded bg-blue-100 px-3 py-1"
+              >
+                This Week
+              </button>
 
-          <button
-            onClick={() => setPreset("month")}
-            className="px-3 py-1 bg-blue-100 rounded"
-          >
-            This Month
-          </button>
+              <button
+                onClick={() => setPreset("month")}
+                className="rounded bg-blue-100 px-3 py-1"
+              >
+                This Month
+              </button>
+            </div>
+          </>
+        )}
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 bg-white p-3">
+            <p className="text-xs text-gray-500">Filtered Bills</p>
+            <p className="text-xl font-semibold text-gray-900">
+              {filteredSummary.totalBills}
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 bg-white p-3">
+            <p className="text-xs text-gray-500">
+              Filtered Amount
+            </p>
+            <p className="text-xl font-semibold text-gray-900">
+              {formatINR(filteredSummary.totalAmount)}
+            </p>
+          </div>
         </div>
 
         {/* ================= BILL LIST ================= */}

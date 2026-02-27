@@ -208,7 +208,19 @@ export async function GET(req: Request) {
       .sort({ createdAt: -1 })
       .limit(10);
 
-    return NextResponse.json({ bills });
+    const totalAmount = bills.reduce((sum, bill) => {
+      const amount =
+        typeof bill.finalTotal === "number"
+          ? bill.finalTotal
+          : bill.grandTotal || 0;
+      return sum + amount;
+    }, 0);
+
+    return NextResponse.json({
+      bills,
+      totalBills: bills.length,
+      totalAmount,
+    });
   }
 
   if (search && search.length >= 3) {
@@ -241,12 +253,26 @@ export async function GET(req: Request) {
     .limit(limit);
 
   const totalBills = await Bill.countDocuments(query);
+  const totalAmountAgg = await Bill.aggregate([
+    { $match: query },
+    {
+      $group: {
+        _id: null,
+        totalAmount: {
+          $sum: { $ifNull: ["$finalTotal", "$grandTotal"] },
+        },
+      },
+    },
+  ]);
+
+  const totalAmount = Number(totalAmountAgg?.[0]?.totalAmount || 0);
 
   return NextResponse.json({
     bills,
     totalPages: Math.ceil(totalBills / limit),
     currentPage: page,
     totalBills,
+    totalAmount,
   });
 }
 
