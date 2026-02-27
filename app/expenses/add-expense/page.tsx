@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 export default function AddExpense() {
   const [title, setTitle] = useState("");
@@ -11,41 +14,82 @@ export default function AddExpense() {
   );
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const res = await fetch("/api/expenses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        category,
-        amount,
-        date,
-        note,
-      }),
+    setSaving(true);
+    setSavePopup({
+      open: true,
+      status: "saving",
+      title: "Saving expense",
+      message: "Please wait while we save data.",
     });
 
-    if (!res.ok) {
-      setMessage("❌ Failed to save expense");
-      return;
-    }
+    try {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          category,
+          amount,
+          date,
+          note,
+        }),
+      });
 
-    setMessage("✅ Expense added");
-    setTitle("");
-    setCategory("");
-    setAmount(0);
-    setNote("");
+      if (!res.ok) {
+        setMessage("Failed to save expense");
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: "Failed to save expense",
+        });
+        return;
+      }
+
+      setMessage("Expense added");
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Expense saved",
+        message: "Data has been saved successfully.",
+      });
+      setTitle("");
+      setCategory("");
+      setAmount(0);
+      setNote("");
+    } catch {
+      setMessage("Failed to save expense");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Network error while saving expense",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="max-w-md mx-auto p-4 bg-white border rounded-xl">
       <h1 className="text-xl font-bold mb-4">Add Expense</h1>
 
-      {message && (
-        <p className="mb-2 text-sm">{message}</p>
-      )}
+      {message && <p className="mb-2 text-sm">{message}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
@@ -108,10 +152,23 @@ export default function AddExpense() {
           className="w-full border p-2 rounded"
         />
 
-        <button className="w-full bg-blue-600 text-white py-2 rounded">
-          Save Expense
+        <button
+          disabled={saving}
+          className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-60"
+        >
+          {saving ? "Saving..." : "Save Expense"}
         </button>
       </form>
+
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </div>
   );
 }

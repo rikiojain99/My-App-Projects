@@ -5,6 +5,9 @@ import VendorSection from "@/components/stock/VendorSection";
 import ItemsSection from "@/components/stock/ItemsSection";
 import ExpenseSection from "@/components/stock/ExpenseSection";
 import TotalsSection from "@/components/stock/TotalsSection";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 export type StockItem = {
   name: string;
@@ -20,6 +23,17 @@ export default function Stock() {
     { name: "", qty: 0, rate: 0, total: 0 },
   ]);
   const [message, setMessage] = useState("");
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
   const [extraExpense, setExtraExpense] = useState(0);
 
   const [vendors, setVendors] = useState<string[]>([]);
@@ -99,29 +113,58 @@ export default function Stock() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
+    try {
+      setSavePopup({
+        open: true,
+        status: "saving",
+        title: "Saving stock",
+        message: "Please wait while we save data.",
+      });
 
-    const res = await fetch("/api/stock", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        vendorName: vendorName.trim(),
-        purchaseDate,
-        items,
-        grandTotal,
-        extraExpense,
-      }),
-    });
+      const res = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vendorName: vendorName.trim(),
+          purchaseDate,
+          items,
+          grandTotal,
+          extraExpense,
+        }),
+      });
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setMessage("Failed to save stock");
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: "Failed to save stock",
+        });
+        return;
+      }
+
+      setMessage("Stock added successfully");
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Stock saved",
+        message: "Data has been saved successfully.",
+      });
+
+      setVendorName("");
+      setPurchaseDate(new Date().toISOString().slice(0, 10));
+      setItems([{ name: "", qty: 0, rate: 0, total: 0 }]);
+      setExtraExpense(0);
+    } catch {
       setMessage("Failed to save stock");
-      return;
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Network error while saving stock",
+      });
     }
-
-    setMessage("Stock added successfully");
-    setVendorName("");
-    setPurchaseDate(new Date().toISOString().slice(0, 10));
-    setItems([{ name: "", qty: 0, rate: 0, total: 0 }]);
-    setExtraExpense(0);
   };
 
   return (
@@ -169,6 +212,15 @@ export default function Stock() {
           Save Stock
         </button>
       </form>
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </div>
   );
 }

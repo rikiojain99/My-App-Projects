@@ -4,6 +4,9 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ItemsTable from "@/components/billing/ItemsTable";
 import PaymentModal from "@/components/billing/PaymentModal";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 type Item = {
   name: string;
@@ -22,6 +25,17 @@ export default function FastBill() {
   const [expanded, setExpanded] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
   const [message, setMessage] = useState("");
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
 
   const [discount, setDiscount] = useState(0);
 
@@ -111,16 +125,35 @@ export default function FastBill() {
 
   const saveFastBill = async () => {
     if (finalTotal <= 0) {
-      setMessage("❌ Total must be greater than 0");
+      setMessage("Total must be greater than 0");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Total must be greater than 0",
+      });
       return;
     }
 
     if (cashAmount + upiAmount !== finalTotal) {
-      setMessage("❌ Payment mismatch");
+      setMessage("Payment mismatch");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Payment mismatch",
+      });
       return;
     }
 
     try {
+      setSavePopup({
+        open: true,
+        status: "saving",
+        title: "Saving fast bill",
+        message: "Please wait while we save data.",
+      });
+
       const res = await fetch("/api/daily-sale", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -135,11 +168,24 @@ export default function FastBill() {
 
       if (!res.ok) {
         const err = await res.json();
-        setMessage(`❌ ${err.error}`);
+        const errMsg = err?.error || "Failed to save fast bill";
+        setMessage(errMsg);
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: errMsg,
+        });
         return;
       }
 
-      setMessage("✅ Fast bill saved");
+      setMessage("Fast bill saved");
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Fast bill saved",
+        message: "Data has been saved successfully.",
+      });
 
       setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
       setDiscount(0);
@@ -147,7 +193,13 @@ export default function FastBill() {
       setUpiAmount(0);
       setShowPayment(false);
     } catch {
-      setMessage("❌ Something went wrong");
+      setMessage("Something went wrong");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Something went wrong",
+      });
     }
   };
 
@@ -156,14 +208,10 @@ export default function FastBill() {
   return (
     <ProtectedRoute>
       <div className="max-w-5xl mx-auto bg-white border rounded-xl p-6 space-y-6 shadow-sm">
-
-        <h1 className="text-2xl font-bold">
-          Cash Bill
-        </h1>
+        <h1 className="text-2xl font-bold">Cash Bill</h1>
 
         {message && <p className="text-sm">{message}</p>}
 
-        {/* ✅ REUSED ITEMS TABLE COMPONENT */}
         <ItemsTable
           items={items}
           expanded={expanded}
@@ -174,10 +222,9 @@ export default function FastBill() {
           onRemoveItem={removeItem}
         />
 
-        {/* TOTAL */}
         <div className="flex justify-between border-t pt-4 text-lg font-bold">
           <span>Total</span>
-          <span>₹ {finalTotal}</span>
+          <span>Rs. {finalTotal}</span>
         </div>
 
         <button
@@ -208,7 +255,16 @@ export default function FastBill() {
           />
         )}
       </div>
+
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </ProtectedRoute>
   );
 }
-  

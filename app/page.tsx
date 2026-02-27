@@ -97,7 +97,8 @@ export default function Home() {
 
         {/* SUMMARY */}
         <div className="grid grid-cols-2 gap-4">
-          <SummaryCard icon="🧾" label="Total Bills" value={totalBills} />
+          <SummaryCard icon="🧾" label="Total Bills"
+          value={totalBills} />
           <SummaryCard 
             icon="⚠️" 
             label="Low Stock" 

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 type StockItem = {
   _id: string;
@@ -24,6 +27,17 @@ export default function StockHoldings() {
     rate: "",
   });
   const [saving, setSaving] = useState(false);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
 
   const fetchData = async (q = "") => {
     setLoading(true);
@@ -64,6 +78,12 @@ export default function StockHoldings() {
 
     if (!itemName) {
       setMessage("Item name is required");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Item name is required",
+      });
       return;
     }
 
@@ -74,12 +94,24 @@ export default function StockHoldings() {
       rate < 0
     ) {
       setMessage("Qty and rate must be non-negative");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Qty and rate must be non-negative",
+      });
       return;
     }
 
     try {
       setSaving(true);
       setMessage("");
+      setSavePopup({
+        open: true,
+        status: "saving",
+        title: "Saving stock update",
+        message: "Please wait while we save data.",
+      });
 
       const res = await fetch("/api/stock-holdings", {
         method: "PATCH",
@@ -95,7 +127,14 @@ export default function StockHoldings() {
       const json = await res.json();
 
       if (!res.ok) {
-        setMessage(json?.error || "Failed to update stock");
+        const errMsg = json?.error || "Failed to update stock";
+        setMessage(errMsg);
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: errMsg,
+        });
         return;
       }
 
@@ -114,8 +153,20 @@ export default function StockHoldings() {
       setEditingId(null);
       setDraft({ itemName: "", availableQty: "", rate: "" });
       setMessage("Stock updated successfully");
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Stock updated",
+        message: "Data has been saved successfully.",
+      });
     } catch {
       setMessage("Something went wrong while updating");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Something went wrong while updating",
+      });
     } finally {
       setSaving(false);
     }
@@ -281,6 +332,15 @@ export default function StockHoldings() {
           </table>
         </div>
       </div>
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </ProtectedRoute>
   );
 }

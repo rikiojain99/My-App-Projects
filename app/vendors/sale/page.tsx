@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ItemsTable from "@/components/billing/ItemsTable";
 import VendorPaymentModal from "@/components/vendor/VendorPaymentModal";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 type Item = {
   name: string;
@@ -13,18 +16,15 @@ type Item = {
 };
 
 export default function VendorSalePage() {
-
-  /* ================= VENDOR STATE ================= */
-
   const [vendorName, setVendorName] = useState("");
   const [vendorMobile, setVendorMobile] = useState("");
   const [vendorId, setVendorId] = useState<string | null>(null);
-
-  const [vendorSuggestions, setVendorSuggestions] = useState<any[]>([]);
+  const [vendorSuggestions, setVendorSuggestions] = useState<any[]>(
+    []
+  );
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [vendorBlockExpanded, setVendorBlockExpanded] = useState(true);
-
-  /* ================= ITEMS ================= */
+  const [vendorBlockExpanded, setVendorBlockExpanded] =
+    useState(true);
 
   const [items, setItems] = useState<Item[]>([
     { name: "", qty: 1, rate: 0, total: 0 },
@@ -33,15 +33,21 @@ export default function VendorSalePage() {
   const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [itemsExpanded, setItemsExpanded] = useState(true);
 
-  /* ================= PAYMENT ================= */
-
   const [discount, setDiscount] = useState(0);
   const [cashPaid, setCashPaid] = useState(0);
   const [showPayment, setShowPayment] = useState(false);
-
   const [message, setMessage] = useState("");
-
-  /* ================= TOTAL ================= */
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
 
   const grandTotal = useMemo(
     () => items.reduce((s, i) => s + i.total, 0),
@@ -58,10 +64,6 @@ export default function VendorSalePage() {
     [finalTotal, cashPaid]
   );
 
-  /* =========================================================
-     VENDOR NAME SUGGESTION
-  ========================================================= */
-
   useEffect(() => {
     if (vendorName.length < 2) {
       setVendorSuggestions([]);
@@ -70,7 +72,9 @@ export default function VendorSalePage() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/vendors?search=${vendorName}`);
+        const res = await fetch(
+          `/api/vendors?search=${vendorName}`
+        );
         if (res.ok) {
           setVendorSuggestions(await res.json());
           setShowSuggestions(true);
@@ -83,16 +87,14 @@ export default function VendorSalePage() {
     return () => clearTimeout(timer);
   }, [vendorName]);
 
-  /* =========================================================
-     MOBILE AUTO FETCH
-  ========================================================= */
-
   useEffect(() => {
     if (vendorMobile.length !== 10) return;
 
     const fetchVendor = async () => {
       try {
-        const res = await fetch(`/api/vendors?mobile=${vendorMobile}`);
+        const res = await fetch(
+          `/api/vendors?mobile=${vendorMobile}`
+        );
         if (res.ok) {
           const data = await res.json();
           if (data) {
@@ -105,10 +107,6 @@ export default function VendorSalePage() {
 
     fetchVendor();
   }, [vendorMobile]);
-
-  /* =========================================================
-     ITEM HANDLER
-  ========================================================= */
 
   const handleItemChange = (
     index: number,
@@ -123,7 +121,6 @@ export default function VendorSalePage() {
 
     updated[index].total =
       updated[index].qty * updated[index].rate;
-
     setItems(updated);
   };
 
@@ -137,22 +134,37 @@ export default function VendorSalePage() {
   const removeItem = (i: number) =>
     setItems(items.filter((_, idx) => idx !== i));
 
-  /* =========================================================
-     SAVE SALE
-  ========================================================= */
-
   const saveVendorSale = async () => {
     if (!vendorId) {
-      setMessage("❌ Select valid vendor");
+      setMessage("Select valid vendor");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Select valid vendor",
+      });
       return;
     }
 
     if (finalTotal <= 0) {
-      setMessage("❌ Invalid total");
+      setMessage("Invalid total");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Invalid total",
+      });
       return;
     }
 
     try {
+      setSavePopup({
+        open: true,
+        status: "saving",
+        title: "Saving vendor sale",
+        message: "Please wait while we save data.",
+      });
+
       const res = await fetch("/api/vendor-sale", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -169,57 +181,60 @@ export default function VendorSalePage() {
 
       if (!res.ok) {
         const err = await res.json();
-        setMessage(`❌ ${err.error}`);
+        const errMsg =
+          err?.error || "Failed to save vendor sale";
+        setMessage(errMsg);
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: errMsg,
+        });
         return;
       }
 
-      setMessage("✅ Vendor sale saved");
+      setMessage("Vendor sale saved");
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Vendor sale saved",
+        message: "Data has been saved successfully.",
+      });
 
-      // reset
       setItems([{ name: "", qty: 1, rate: 0, total: 0 }]);
       setDiscount(0);
       setCashPaid(0);
       setShowPayment(false);
-
     } catch {
-      setMessage("❌ Something went wrong");
+      setMessage("Something went wrong");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Something went wrong",
+      });
     }
   };
-
-  /* =========================================================
-     UI
-  ========================================================= */
 
   return (
     <ProtectedRoute>
       <div className="max-w-5xl mx-auto p-6 bg-white rounded-xl space-y-6">
-
-        <h1 className="text-2xl font-bold">
-          Vendor Sale
-        </h1>
+        <h1 className="text-2xl font-bold">Vendor Sale</h1>
 
         {message && <p className="text-sm">{message}</p>}
 
-        {/* ================= VENDOR BLOCK ================= */}
-
         <div className="border rounded-xl p-4 space-y-4">
-
           <div className="flex justify-between">
-            <h2 className="font-semibold">
-              Vendor Details
-            </h2>
+            <h2 className="font-semibold">Vendor Details</h2>
             <button
-              onClick={() =>
-                setVendorBlockExpanded((p) => !p)
-              }
+              onClick={() => setVendorBlockExpanded((p) => !p)}
             >
-              {vendorBlockExpanded ? "−" : "+"}
+              {vendorBlockExpanded ? "-" : "+"}
             </button>
           </div>
 
           {vendorBlockExpanded && (
             <>
-              {/* Vendor Name */}
               <div className="relative">
                 <input
                   type="text"
@@ -253,22 +268,17 @@ export default function VendorSalePage() {
                   )}
               </div>
 
-              {/* Mobile */}
               <input
                 type="text"
                 value={vendorMobile}
                 maxLength={10}
-                onChange={(e) =>
-                  setVendorMobile(e.target.value)
-                }
+                onChange={(e) => setVendorMobile(e.target.value)}
                 placeholder="Mobile Number"
                 className="w-full border p-2 rounded"
               />
             </>
           )}
         </div>
-
-        {/* ================= ITEMS ================= */}
 
         <ItemsTable
           items={items}
@@ -280,11 +290,9 @@ export default function VendorSalePage() {
           onRemoveItem={removeItem}
         />
 
-        {/* ================= PAYMENT TRIGGER ================= */}
-
         <div className="flex justify-between border-t pt-4 text-lg font-bold">
           <span>Total</span>
-          <span>₹ {finalTotal}</span>
+          <span>Rs. {finalTotal}</span>
         </div>
 
         <button
@@ -293,8 +301,6 @@ export default function VendorSalePage() {
         >
           Proceed to Payment
         </button>
-
-        {/* ================= PAYMENT MODAL ================= */}
 
         {showPayment && (
           <VendorPaymentModal
@@ -310,8 +316,17 @@ export default function VendorSalePage() {
             onSave={saveVendorSale}
           />
         )}
-
       </div>
+
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </ProtectedRoute>
   );
 }

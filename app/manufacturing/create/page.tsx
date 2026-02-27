@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 import ProductDetailsSection from "@/components/manufacturing/ProductDetailsSection";
 import RawMaterialsTable, {
   type ManufacturingLookupItem,
@@ -63,6 +66,17 @@ export default function ManufacturingCreate() {
   );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<MessageState>(null);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
 
   const updateRow = <K extends keyof RawInput>(
     index: number,
@@ -256,6 +270,12 @@ export default function ManufacturingCreate() {
 
     setSaving(true);
     setMessage(null);
+    setSavePopup({
+      open: true,
+      status: "saving",
+      title: "Saving manufacturing",
+      message: "Please wait while we save data.",
+    });
 
     try {
       const payload = {
@@ -288,9 +308,17 @@ export default function ManufacturingCreate() {
         .catch(() => ({ error: "Failed to parse response" }));
 
       if (!res.ok) {
+        const errorText =
+          body?.error || "Error saving manufacturing";
         setMessage({
           type: "error",
-          text: body?.error || "Error saving manufacturing",
+          text: errorText,
+        });
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: errorText,
         });
         return;
       }
@@ -299,6 +327,12 @@ export default function ManufacturingCreate() {
         type: "success",
         text: "Manufacturing saved successfully",
       });
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Manufacturing saved",
+        message: "Data has been saved successfully.",
+      });
 
       setProductName("");
       setProducedQty(1);
@@ -306,9 +340,16 @@ export default function ManufacturingCreate() {
       setSuggestions([]);
       setActiveRow(null);
     } catch {
+      const errorText = "Network error while saving manufacturing";
       setMessage({
         type: "error",
-        text: "Network error while saving manufacturing",
+        text: errorText,
+      });
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: errorText,
       });
     } finally {
       setSaving(false);
@@ -384,6 +425,15 @@ export default function ManufacturingCreate() {
           </div>
         </div>
       </div>
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </div>
   );
 }

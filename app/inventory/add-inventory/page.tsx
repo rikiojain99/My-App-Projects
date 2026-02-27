@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 type ItemType = { _id: string; name: string };
 type ShopType = 1 | 2 | 3; // Shop1=1, Home=2, Shop2=3
@@ -15,6 +18,18 @@ export default function AddInventory() {
   const [total, setTotal] = useState(0);
   const [suggestions, setSuggestions] = useState<ItemType[]>([]);
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -51,6 +66,13 @@ export default function AddInventory() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
+    setSaving(true);
+    setSavePopup({
+      open: true,
+      status: "saving",
+      title: "Saving inventory",
+      message: "Please wait while we save data.",
+    });
     try {
       const res = await fetch("/api/inventory", {
         method: "POST",
@@ -59,9 +81,22 @@ export default function AddInventory() {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setMessage(`Fail: ${data.error || "Failed to save item"}`);
+        const errMsg = data.error || "Failed to save item";
+        setMessage(`Fail: ${errMsg}`);
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Save failed",
+          message: errMsg,
+        });
       } else {
         setMessage(`Saved. Current qty: ${data.item.qty}`);
+        setSavePopup({
+          open: true,
+          status: "success",
+          title: "Inventory saved",
+          message: "Data has been saved successfully.",
+        });
         setName("");
         setType("");
         setCategory("");
@@ -71,6 +106,14 @@ export default function AddInventory() {
     } catch (err) {
       console.error(err);
       setMessage("Something went wrong");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Save failed",
+        message: "Something went wrong",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -158,12 +201,25 @@ export default function AddInventory() {
 
         <div className="font-bold text-black">Total: {total}</div>
 
-        <button type="submit" className="w-full py-2 px-4 bg-green-500 text-white font-bold rounded hover:opacity-90">
-          Save Item
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full py-2 px-4 bg-green-500 text-white font-bold rounded hover:opacity-90 disabled:opacity-60"
+        >
+          {saving ? "Saving..." : "Save Item"}
         </button>
       </form>
 
       {message && <p className={`mt-2 ${message.includes("Fail") ? "text-red-500" : "text-green-600"}`}>{message}</p>}
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </div>
   );
 }
