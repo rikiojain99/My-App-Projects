@@ -285,8 +285,8 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
                   max-h-[70vh] sm:max-h-56 overflow-hidden">
 
     {isLoadingSuggestions ? (
-      <p className="px-4 py-4 text-base sm:text-xs text-slate-500">
-        Searching items...
+      <p className="px-2 py-2  text-base sm:text-xs text-slate-500">
+        Searching...
       </p>
     ) : suggestions.length > 0 ? (
       <ul
@@ -300,7 +300,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
             role="option"
             aria-selected={activeIndex === suggestionIndex}
             className={`cursor-pointer
-              px-5 py-4 text-lg sm:text-sm sm:px-3 sm:py-2
+              px-1 py-1 text-lg sm:text-sm sm:px-1 sm:py-1  
               transition
               ${activeIndex === suggestionIndex
                 ? "bg-sky-100 text-sky-900"
@@ -314,11 +314,11 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
               selectSuggestion(item);
             }}
           >
-            <div className="flex items-center justify-between gap-4 ">
+            <div className="flex items-center justify-between ">
               <span
   className="
     block
-    overflow-x-auto
+    overflow-scroll
     whitespace-nowrap
     sm:truncate sm:overflow-hidden
     scrollbar-hide
@@ -330,7 +330,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
               {item.code && (
                 <span className="shrink-0 rounded-lg border 
                                  border-slate-300 bg-slate-100
-                                 px-3 py-1 text-sm sm:text-xs">
+                                 px-2 py-1 text-sm sm:text-xs">
                   {item.code}
                 </span>
               )}
@@ -339,9 +339,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         ))}
       </ul>
     ) : (
-      <p className="px-4 py-4 text-base sm:text-xs text-slate-500">
-        No matching items found.
-      </p>
+      <span></span>
     )}
   </div>
 )}
@@ -359,7 +357,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
               </span>
             ) : (
               <span className="text-amber-700">
-                Warning: Sold without stock
+                Not in stock
               </span>
             )}
           </p>
