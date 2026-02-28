@@ -277,60 +277,74 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         />
 
         {/* SUGGESTIONS (MOBILE IMPROVED) */}
-        {shouldShowDropdown && (
-          <div className="absolute left-0 right-0 top-[calc(100%+0.4rem)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            {isLoadingSuggestions ? (
-              <p className="px-4 py-3 text-sm text-slate-500">
-                Searching items...
-              </p>
-            ) : suggestions.length > 0 ? (
-              <ul
-                id={listboxId}
-                role="listbox"
-                className="max-h-72 overflow-y-auto py-1"
-              >
-                {suggestions.map((item, suggestionIndex) => (
-                  <li
-                    key={item._id}
-                    role="option"
-                    aria-selected={
-                      activeIndex === suggestionIndex
-                    }
-                    className={`cursor-pointer px-4 py-3 text-base transition sm:text-sm sm:py-2 ${
-                      activeIndex === suggestionIndex
-                        ? "bg-sky-100 text-sky-900"
-                        : "text-slate-800 hover:bg-slate-50"
-                    }`}
-                    onMouseEnter={() =>
-                      setActiveIndex(suggestionIndex)
-                    }
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectSuggestion(item);
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-3 w-full">
-                      <span className="truncate whitespace-nowrap overflow-hidden text-ellipsis">
-                        {item.name}
-                      </span>
+{/* SUGGESTIONS */}
+{shouldShowDropdown && (
+  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 
+                  bg-white shadow-2xl border border-slate-200
+                  rounded-xl sm:rounded-xl
+                  max-h-[70vh] sm:max-h-56 overflow-hidden">
 
-                      {item.code && (
-                        <span className="shrink-0 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
-                          {item.code}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="px-4 py-3 text-sm text-slate-500">
-                No matching items found.
-              </p>
-            )}
-          </div>
-        )}
+    {isLoadingSuggestions ? (
+      <p className="px-4 py-4 text-base sm:text-xs text-slate-500">
+        Searching items...
+      </p>
+    ) : suggestions.length > 0 ? (
+      <ul
+        id={listboxId}
+        role="listbox"
+        className="overflow-y-auto"
+      >
+        {suggestions.map((item, suggestionIndex) => (
+          <li
+            key={item._id}
+            role="option"
+            aria-selected={activeIndex === suggestionIndex}
+            className={`cursor-pointer
+              px-5 py-4 text-lg sm:text-sm sm:px-3 sm:py-2
+              transition
+              ${activeIndex === suggestionIndex
+                ? "bg-sky-100 text-sky-900"
+                : "text-slate-800 hover:bg-slate-50"
+              }`}
+            onMouseEnter={() =>
+              setActiveIndex(suggestionIndex)
+            }
+            onMouseDown={(e) => {
+              e.preventDefault();
+              selectSuggestion(item);
+            }}
+          >
+            <div className="flex items-center justify-between gap-4 ">
+              <span
+  className="
+    block
+    overflow-x-auto
+    whitespace-nowrap
+    sm:truncate sm:overflow-hidden
+    scrollbar-hide
+  "
+>
+  {item.name}
+</span>
 
+              {item.code && (
+                <span className="shrink-0 rounded-lg border 
+                                 border-slate-300 bg-slate-100
+                                 px-3 py-1 text-sm sm:text-xs">
+                  {item.code}
+                </span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p className="px-4 py-4 text-base sm:text-xs text-slate-500">
+        No matching items found.
+      </p>
+    )}
+  </div>
+)}
         {/* STOCK STATUS */}
         {stockQty !== null && (
           <p className="mt-1 text-xs">
