@@ -36,26 +36,18 @@ type Props = {
 const ItemNameInput = forwardRef<HTMLInputElement, Props>(
   ({ index, items, handleItemChange }, ref) => {
     const currentItemName = items[index]?.name ?? "";
-    const [query, setQuery] =
-      useState<string>(currentItemName);
-    const [suggestions, setSuggestions] =
-      useState<ItemType[]>([]);
-    const [stockQty, setStockQty] =
-      useState<number | null>(null);
-    const [selectedCode, setSelectedCode] =
-      useState<string>("");
-    const [isFocused, setIsFocused] =
-      useState<boolean>(false);
+    const [query, setQuery] = useState<string>(currentItemName);
+    const [suggestions, setSuggestions] = useState<ItemType[]>([]);
+    const [stockQty, setStockQty] = useState<number | null>(null);
+    const [selectedCode, setSelectedCode] = useState<string>("");
+    const [isFocused, setIsFocused] = useState<boolean>(false);
     const [isLoadingSuggestions, setIsLoadingSuggestions] =
       useState<boolean>(false);
     const [activeIndex, setActiveIndex] = useState(-1);
 
-    const suggestionTimer =
-      useRef<NodeJS.Timeout | null>(null);
-    const stockTimer =
-      useRef<NodeJS.Timeout | null>(null);
-    const blurTimer =
-      useRef<NodeJS.Timeout | null>(null);
+    const suggestionTimer = useRef<NodeJS.Timeout | null>(null);
+    const stockTimer = useRef<NodeJS.Timeout | null>(null);
+    const blurTimer = useRef<NodeJS.Timeout | null>(null);
     const suggestionReqId = useRef(0);
     const stockReqId = useRef(0);
 
@@ -87,15 +79,9 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
 
     useEffect(() => {
       return () => {
-        if (suggestionTimer.current) {
-          clearTimeout(suggestionTimer.current);
-        }
-        if (stockTimer.current) {
-          clearTimeout(stockTimer.current);
-        }
-        if (blurTimer.current) {
-          clearTimeout(blurTimer.current);
-        }
+        if (suggestionTimer.current) clearTimeout(suggestionTimer.current);
+        if (stockTimer.current) clearTimeout(stockTimer.current);
+        if (blurTimer.current) clearTimeout(blurTimer.current);
       };
     }, []);
 
@@ -108,58 +94,53 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         return;
       }
 
-      if (suggestionTimer.current) {
-        clearTimeout(suggestionTimer.current);
-      }
+      if (suggestionTimer.current) clearTimeout(suggestionTimer.current);
 
       setIsLoadingSuggestions(true);
-      suggestionTimer.current = setTimeout(
-        async () => {
-          const reqId = ++suggestionReqId.current;
+      suggestionTimer.current = setTimeout(async () => {
+        const reqId = ++suggestionReqId.current;
 
-          try {
-            const res = await fetch(
-              `/api/items?search=${encodeURIComponent(
-                normalizedQuery
-              )}`
-            );
+        try {
+          const res = await fetch(
+            `/api/items?search=${encodeURIComponent(
+              normalizedQuery
+            )}`
+          );
 
-            if (!res.ok) {
-              if (reqId === suggestionReqId.current) {
-                setSuggestions([]);
-                setActiveIndex(-1);
-              }
-              return;
-            }
-
-            const data: ItemType[] = await res.json();
-            if (reqId !== suggestionReqId.current) return;
-
-            const nextSuggestions = Array.isArray(data)
-              ? data
-              : [];
-            setSuggestions(nextSuggestions);
-            setActiveIndex(
-              nextSuggestions.length > 0 ? 0 : -1
-            );
-          } catch {
+          if (!res.ok) {
             if (reqId === suggestionReqId.current) {
               setSuggestions([]);
               setActiveIndex(-1);
             }
-          } finally {
-            if (reqId === suggestionReqId.current) {
-              setIsLoadingSuggestions(false);
-            }
+            return;
           }
-        },
-        300
-      );
+
+          const data: ItemType[] = await res.json();
+          if (reqId !== suggestionReqId.current) return;
+
+          const nextSuggestions = Array.isArray(data)
+            ? data
+            : [];
+
+          setSuggestions(nextSuggestions);
+          setActiveIndex(
+            nextSuggestions.length > 0 ? 0 : -1
+          );
+        } catch {
+          if (reqId === suggestionReqId.current) {
+            setSuggestions([]);
+            setActiveIndex(-1);
+          }
+        } finally {
+          if (reqId === suggestionReqId.current) {
+            setIsLoadingSuggestions(false);
+          }
+        }
+      }, 300);
 
       return () => {
-        if (suggestionTimer.current) {
+        if (suggestionTimer.current)
           clearTimeout(suggestionTimer.current);
-        }
       };
     }, [normalizedQuery]);
 
@@ -170,49 +151,43 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
         return;
       }
 
-      if (stockTimer.current) {
-        clearTimeout(stockTimer.current);
-      }
+      if (stockTimer.current) clearTimeout(stockTimer.current);
 
-      stockTimer.current = setTimeout(
-        async () => {
-          const reqId = ++stockReqId.current;
+      stockTimer.current = setTimeout(async () => {
+        const reqId = ++stockReqId.current;
 
-          try {
-            const res = await fetch(
-              `/api/stock/check?name=${encodeURIComponent(
-                normalizedQuery
-              )}`
-            );
+        try {
+          const res = await fetch(
+            `/api/stock/check?name=${encodeURIComponent(
+              normalizedQuery
+            )}`
+          );
 
-            if (!res.ok) {
-              if (reqId === stockReqId.current) {
-                setStockQty(null);
-              }
-              return;
-            }
-
-            const data = await res.json();
-            if (reqId !== stockReqId.current) return;
-
-            setStockQty(
-              typeof data?.availableQty === "number"
-                ? data.availableQty
-                : 0
-            );
-          } catch {
+          if (!res.ok) {
             if (reqId === stockReqId.current) {
               setStockQty(null);
             }
+            return;
           }
-        },
-        300
-      );
+
+          const data = await res.json();
+          if (reqId !== stockReqId.current) return;
+
+          setStockQty(
+            typeof data?.availableQty === "number"
+              ? data.availableQty
+              : 0
+          );
+        } catch {
+          if (reqId === stockReqId.current) {
+            setStockQty(null);
+          }
+        }
+      }, 300);
 
       return () => {
-        if (stockTimer.current) {
+        if (stockTimer.current)
           clearTimeout(stockTimer.current);
-        }
       };
     }, [normalizedQuery]);
 
@@ -266,9 +241,10 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
       }
     };
 
-    /* ---------- UI ---------- */
+    /* ================= UI ================= */
     return (
       <div className="relative">
+        {/* INPUT (UNCHANGED) */}
         <input
           ref={ref}
           name="name"
@@ -279,9 +255,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           aria-expanded={shouldShowDropdown}
           aria-controls={listboxId}
           aria-autocomplete="list"
-          onChange={(
-            e: React.ChangeEvent<HTMLInputElement>
-          ) => {
+          onChange={(e) => {
             setQuery(e.target.value);
             setSelectedCode("");
             setActiveIndex(-1);
@@ -289,9 +263,8 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           }}
           onFocus={() => {
             setIsFocused(true);
-            if (blurTimer.current) {
+            if (blurTimer.current)
               clearTimeout(blurTimer.current);
-            }
           }}
           onBlur={() => {
             blurTimer.current = setTimeout(() => {
@@ -303,45 +276,46 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           onKeyDown={handleKeyDown}
         />
 
-        {/* SUGGESTIONS */}
+        {/* SUGGESTIONS (MOBILE IMPROVED) */}
         {shouldShowDropdown && (
-          <div className="absolute left-0 right-0 top-[calc(100%+0.3rem)] z-20 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="absolute left-0 right-0 top-[calc(100%+0.4rem)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
             {isLoadingSuggestions ? (
-              <p className="px-3 py-2 text-xs text-slate-500">
+              <p className="px-4 py-3 text-sm text-slate-500">
                 Searching items...
               </p>
             ) : suggestions.length > 0 ? (
               <ul
                 id={listboxId}
                 role="listbox"
-                className="max-h-56 overflow-y-auto py-1"
+                className="max-h-72 overflow-y-auto py-1"
               >
                 {suggestions.map((item, suggestionIndex) => (
                   <li
                     key={item._id}
                     role="option"
-                    aria-selected={activeIndex === suggestionIndex}
-                    className={`cursor-pointer px-3 py-2 text-sm transition ${
+                    aria-selected={
                       activeIndex === suggestionIndex
-                        ? "bg-sky-50 text-sky-800"
-                        : "text-slate-700 hover:bg-slate-50"
+                    }
+                    className={`cursor-pointer px-4 py-3 text-base transition sm:text-sm sm:py-2 ${
+                      activeIndex === suggestionIndex
+                        ? "bg-sky-100 text-sky-900"
+                        : "text-slate-800 hover:bg-slate-50"
                     }`}
                     onMouseEnter={() =>
                       setActiveIndex(suggestionIndex)
                     }
-                    onMouseDown={(
-                      e: React.MouseEvent<HTMLLIElement>
-                    ) => {
+                    onMouseDown={(e) => {
                       e.preventDefault();
                       selectSuggestion(item);
                     }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate">
+                    <div className="flex items-center justify-between gap-3 w-full">
+                      <span className="truncate whitespace-nowrap overflow-hidden text-ellipsis">
                         {item.name}
                       </span>
+
                       {item.code && (
-                        <span className="shrink-0 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-500">
+                        <span className="shrink-0 rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
                           {item.code}
                         </span>
                       )}
@@ -350,7 +324,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
                 ))}
               </ul>
             ) : (
-              <p className="px-3 py-2 text-xs text-slate-500">
+              <p className="px-4 py-3 text-sm text-slate-500">
                 No matching items found.
               </p>
             )}
