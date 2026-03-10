@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 type ItemType = {
   _id: string;
@@ -14,6 +17,19 @@ export default function BillEditModal({
   onUpdated,
 }: any) {
   const [loading, setLoading] = useState(false);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
+  const [closeAfterSuccess, setCloseAfterSuccess] =
+    useState(false);
   const [editingBill, setEditingBill] = useState<any | null>(null);
   const [activeItemRow, setActiveItemRow] = useState<number | null>(
     null
@@ -43,6 +59,8 @@ export default function BillEditModal({
     setEditingBill(bill);
     setItemSuggestions([]);
     setActiveItemRow(null);
+    setCloseAfterSuccess(false);
+    setSavePopup((prev) => ({ ...prev, open: false }));
   }, [bill]);
 
   useEffect(() => {
@@ -68,12 +86,17 @@ export default function BillEditModal({
       (sum: number, i: any) => sum + i.total,
       0
     );
+    const safeDiscount = Math.min(
+      Math.max(Number(editingBill.discount || 0), 0),
+      grandTotal
+    );
 
     setEditingBill({
       ...editingBill,
       items,
       grandTotal,
-      finalTotal: grandTotal - (editingBill.discount || 0),
+      discount: safeDiscount,
+      finalTotal: Math.max(grandTotal - safeDiscount, 0),
     });
   };
 
@@ -158,40 +181,79 @@ export default function BillEditModal({
 
   /* ================= DISCOUNT ================= */
   const handleDiscountChange = (value: number) => {
+    const safeDiscount = Math.min(
+      Math.max(value, 0),
+      Number(editingBill.grandTotal || 0)
+    );
     setEditingBill({
       ...editingBill,
-      discount: value,
-      finalTotal: editingBill.grandTotal - value,
+      discount: safeDiscount,
+      finalTotal: Math.max(
+        Number(editingBill.grandTotal || 0) - safeDiscount,
+        0
+      ),
     });
   };
 
   /* ================= SAVE ================= */
   const handleSave = async () => {
     setLoading(true);
-
-    await fetch("/api/bills", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        billId: editingBill._id,
-        updates: {
-          items: editingBill.items,
-          discount: editingBill.discount,
-          grandTotal: editingBill.grandTotal,
-          finalTotal: editingBill.finalTotal,
-          paymentMode: editingBill.paymentMode,
-          cashAmount: editingBill.cashAmount,
-          upiAmount: editingBill.upiAmount,
-          upiId: editingBill.upiId,
-          upiAccount: editingBill.upiAccount,
-        },
-        customerUpdates: editingBill.customerId,
-      }),
+    setCloseAfterSuccess(false);
+    setSavePopup({
+      open: true,
+      status: "saving",
+      title: "Updating bill",
+      message: "Please wait while we save changes.",
     });
 
-    setLoading(false);
-    onClose();
-    onUpdated(1);
+    try {
+      const res = await fetch("/api/bills", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          billId: editingBill._id,
+          updates: {
+            items: editingBill.items,
+            discount: editingBill.discount,
+            grandTotal: editingBill.grandTotal,
+            finalTotal: editingBill.finalTotal,
+            paymentMode: editingBill.paymentMode,
+            cashAmount: editingBill.cashAmount,
+            upiAmount: editingBill.upiAmount,
+            upiId: editingBill.upiId,
+            upiAccount: editingBill.upiAccount,
+          },
+          customerUpdates: editingBill.customerId,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Update failed",
+          message: err?.error || "Failed to update bill",
+        });
+        return;
+      }
+      setCloseAfterSuccess(true);
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Bill updated",
+        message: "Bill details updated successfully.",
+      });
+    } catch {
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Update failed",
+        message: "Failed to update bill",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -250,7 +312,7 @@ export default function BillEditModal({
 
                 {activeItemRow === i &&
                   String(it.name || "").trim().length >= 2 && (
-                  <div className="absolute left-0 right-\[6\.5rem\ top-[calc(100%+0.2rem)] z-30 max-h-40 overflow-y-auto rounded border bg-white shadow">
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.2rem)] z-30 max-h-40 overflow-y-auto rounded border bg-white shadow">
                     {loadingSuggestions ? (
                       <p className="px-2 py-1 text-xs text-gray-500">
                         Loading...
@@ -492,6 +554,22 @@ export default function BillEditModal({
           </button>
         </div>
       </div>
+
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() => {
+          setSavePopup((prev) => ({ ...prev, open: false }));
+
+          if (closeAfterSuccess) {
+            setCloseAfterSuccess(false);
+            onClose();
+            onUpdated();
+          }
+        }}
+      />
     </div>
   );
 }

@@ -7,6 +7,292 @@ import Bill from "@/models/Bill";
 import Customer from "@/models/Customer";
 import ItemStock from "@/models/ItemStock";
 
+type PaymentMode = "cash" | "upi" | "split";
+
+type NormalizedBillItem = {
+  name: string;
+  qty: number;
+  rate: number;
+  total: number;
+};
+
+type NormalizedCreateBillBody = {
+  billNo: string;
+  mobile: string;
+  items: NormalizedBillItem[];
+  grandTotal: number;
+  discount: number;
+  finalTotal: number;
+  paymentMode: PaymentMode;
+  cashAmount: number;
+  upiAmount: number;
+  upiId: string | null;
+  upiAccount: string | null;
+};
+
+type NormalizedUpdatePayload = {
+  billId: string;
+  updates: {
+    items: NormalizedBillItem[];
+    grandTotal: number;
+    discount: number;
+    finalTotal: number;
+    paymentMode: PaymentMode;
+    cashAmount: number;
+    upiAmount: number;
+    upiId: string | null;
+    upiAccount: string | null;
+  };
+  customerUpdates?: {
+    name?: string;
+    mobile?: string;
+    city?: string;
+    type?: string;
+  };
+};
+
+const roundMoney = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100;
+
+const isSameAmount = (a: number, b: number) =>
+  Math.abs(roundMoney(a) - roundMoney(b)) < 0.01;
+
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const normalizeItems = (rawItems: any): NormalizedBillItem[] => {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    throw new Error("Items required");
+  }
+
+  return rawItems.map((item, index) => {
+    const name = String(item?.name || "").trim();
+    const qty = Number(item?.qty);
+    const rate = Number(item?.rate);
+
+    if (!name) {
+      throw new Error(`Invalid item name at row ${index + 1}`);
+    }
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new Error(`Invalid qty for ${name}`);
+    }
+    if (!Number.isFinite(rate) || rate < 0) {
+      throw new Error(`Invalid rate for ${name}`);
+    }
+
+    return {
+      name,
+      qty,
+      rate,
+      total: roundMoney(qty * rate),
+    };
+  });
+};
+
+const normalizePayment = ({
+  paymentMode,
+  cashAmount,
+  upiAmount,
+  finalTotal,
+  upiId,
+  upiAccount,
+}: {
+  paymentMode: any;
+  cashAmount: any;
+  upiAmount: any;
+  finalTotal: number;
+  upiId: any;
+  upiAccount: any;
+}) => {
+  const mode = String(paymentMode || "").trim() as PaymentMode;
+  const cash = roundMoney(Number(cashAmount ?? 0));
+  const upi = roundMoney(Number(upiAmount ?? 0));
+  const normalizedUpiId = String(upiId || "").trim() || null;
+  const normalizedUpiAccount =
+    String(upiAccount || "").trim() || null;
+
+  if (!["cash", "upi", "split"].includes(mode)) {
+    throw new Error("Invalid payment mode");
+  }
+
+  if (!Number.isFinite(cash) || !Number.isFinite(upi) || cash < 0 || upi < 0) {
+    throw new Error("Invalid payment amount");
+  }
+
+  if (mode === "cash") {
+    if (!isSameAmount(cash, finalTotal) || upi !== 0) {
+      throw new Error("Payment mismatch");
+    }
+  }
+
+  if (mode === "upi") {
+    if (!isSameAmount(upi, finalTotal) || cash !== 0 || !normalizedUpiAccount) {
+      throw new Error("Payment mismatch");
+    }
+  }
+
+  if (mode === "split") {
+    if (!isSameAmount(cash + upi, finalTotal)) {
+      throw new Error("Payment mismatch");
+    }
+    if (upi > 0 && !normalizedUpiAccount) {
+      throw new Error("UPI account required");
+    }
+  }
+
+  return {
+    paymentMode: mode,
+    cashAmount: cash,
+    upiAmount: upi,
+    upiId: normalizedUpiId,
+    upiAccount: normalizedUpiAccount,
+  };
+};
+
+const normalizeCreateBillBody = (body: any): NormalizedCreateBillBody => {
+  const billNo = String(body?.billNo || "").trim();
+  const mobile = String(body?.mobile || "").trim();
+
+  if (!billNo) {
+    throw new Error("Bill number required");
+  }
+  if (!/^\d{10}$/.test(mobile)) {
+    throw new Error("Valid customer mobile required");
+  }
+
+  const items = normalizeItems(body?.items);
+  const computedGrandTotal = roundMoney(
+    items.reduce((sum, item) => sum + item.total, 0)
+  );
+
+  if (computedGrandTotal <= 0) {
+    throw new Error("Invalid total amount");
+  }
+
+  const discountInput = Number(body?.discount ?? 0);
+  if (!Number.isFinite(discountInput) || discountInput < 0) {
+    throw new Error("Invalid discount");
+  }
+  const discount = Math.min(roundMoney(discountInput), computedGrandTotal);
+  const finalTotal = roundMoney(
+    Math.max(computedGrandTotal - discount, 0)
+  );
+
+  if (
+    body?.grandTotal !== undefined &&
+    !isSameAmount(Number(body.grandTotal), computedGrandTotal)
+  ) {
+    throw new Error("Grand total mismatch");
+  }
+
+  if (
+    body?.finalTotal !== undefined &&
+    !isSameAmount(Number(body.finalTotal), finalTotal)
+  ) {
+    throw new Error("Final total mismatch");
+  }
+
+  const payment = normalizePayment({
+    paymentMode: body?.paymentMode,
+    cashAmount: body?.cashAmount,
+    upiAmount: body?.upiAmount,
+    finalTotal,
+    upiId: body?.upiId,
+    upiAccount: body?.upiAccount,
+  });
+
+  return {
+    billNo,
+    mobile,
+    items,
+    grandTotal: computedGrandTotal,
+    discount,
+    finalTotal,
+    ...payment,
+  };
+};
+
+const normalizeUpdatePayload = (data: any): NormalizedUpdatePayload => {
+  const billId = String(data?.billId || "").trim();
+  if (!billId) {
+    throw new Error("Bill ID required");
+  }
+
+  const updates = data?.updates || {};
+  const items = normalizeItems(updates.items);
+  const computedGrandTotal = roundMoney(
+    items.reduce((sum, item) => sum + item.total, 0)
+  );
+
+  const discountInput = Number(updates?.discount ?? 0);
+  if (!Number.isFinite(discountInput) || discountInput < 0) {
+    throw new Error("Invalid discount");
+  }
+  const discount = Math.min(roundMoney(discountInput), computedGrandTotal);
+  const finalTotal = roundMoney(
+    Math.max(computedGrandTotal - discount, 0)
+  );
+
+  if (
+    updates?.grandTotal !== undefined &&
+    !isSameAmount(Number(updates.grandTotal), computedGrandTotal)
+  ) {
+    throw new Error("Grand total mismatch");
+  }
+
+  if (
+    updates?.finalTotal !== undefined &&
+    !isSameAmount(Number(updates.finalTotal), finalTotal)
+  ) {
+    throw new Error("Final total mismatch");
+  }
+
+  const payment = normalizePayment({
+    paymentMode: updates?.paymentMode,
+    cashAmount: updates?.cashAmount,
+    upiAmount: updates?.upiAmount,
+    finalTotal,
+    upiId: updates?.upiId,
+    upiAccount: updates?.upiAccount,
+  });
+
+  const rawCustomerUpdates = data?.customerUpdates || {};
+  const customerUpdates: Record<string, string> = {};
+
+  for (const key of ["name", "city", "type"] as const) {
+    if (rawCustomerUpdates[key] !== undefined) {
+      customerUpdates[key] = String(rawCustomerUpdates[key]).trim();
+    }
+  }
+
+  if (rawCustomerUpdates.mobile !== undefined) {
+    const normalizedMobile = String(rawCustomerUpdates.mobile).trim();
+    if (
+      normalizedMobile &&
+      !/^\d{10}$/.test(normalizedMobile) &&
+      normalizedMobile !== "FAST-SALE"
+    ) {
+      throw new Error("Invalid customer mobile");
+    }
+    customerUpdates.mobile = normalizedMobile;
+  }
+
+  return {
+    billId,
+    updates: {
+      items,
+      grandTotal: computedGrandTotal,
+      discount,
+      finalTotal,
+      ...payment,
+    },
+    customerUpdates:
+      Object.keys(customerUpdates).length > 0
+        ? customerUpdates
+        : undefined,
+  };
+};
+
 const isTransactionUnsupported = (err: any) => {
   const msg = String(err?.message || "");
   return (
@@ -21,6 +307,13 @@ const errorResponse = (err: any) => {
 
   if (message.includes("Insufficient stock")) status = 400;
   else if (message.includes("not found")) status = 404;
+  else if (
+    message.includes("Invalid") ||
+    message.includes("required") ||
+    message.includes("mismatch")
+  ) {
+    status = 400;
+  }
   else if (
     message.includes("duplicate key") ||
     message.includes("E11000")
@@ -146,7 +439,7 @@ async function applyBillUpdateWithStockSync({
 ===================================================== */
 export async function POST(req: Request) {
   await dbConnect();
-  const body = await req.json();
+  const body = normalizeCreateBillBody(await req.json());
 
   const session = await mongoose.startSession();
   try {
@@ -224,11 +517,12 @@ export async function GET(req: Request) {
   }
 
   if (search && search.length >= 3) {
+    const escapedSearch = escapeRegex(search.trim());
     const customers = await Customer.find({
       $or: [
-        { name: { $regex: search, $options: "i" } },
-        { mobile: { $regex: search, $options: "i" } },
-        { city: { $regex: search, $options: "i" } },
+        { name: { $regex: escapedSearch, $options: "i" } },
+        { mobile: { $regex: escapedSearch, $options: "i" } },
+        { city: { $regex: escapedSearch, $options: "i" } },
       ],
     }).select("_id");
 
@@ -281,8 +575,11 @@ export async function GET(req: Request) {
 ===================================================== */
 export async function PUT(req: Request) {
   await dbConnect();
-  const data = await req.json();
-  const { billId, updates, customerUpdates } = data;
+  const {
+    billId,
+    updates,
+    customerUpdates,
+  } = normalizeUpdatePayload(await req.json());
 
   const session = await mongoose.startSession();
   try {

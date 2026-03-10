@@ -1,11 +1,17 @@
 "use client";
+
 import { openWhatsApp } from "@/lib/whatsapp";
 import { useState, useMemo, useRef, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import CustomerSection, { Customer } from "@/components/billing/CustomerSection";
+import CustomerSection, {
+  Customer,
+} from "@/components/billing/CustomerSection";
 import ItemsTable from "@/components/billing/ItemsTable";
 import PreviousBillsModal from "@/components/billing/PreviousBillsModal";
 import PaymentModal from "@/components/billing/PaymentModal";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 type Item = {
   name: string;
@@ -16,10 +22,16 @@ type Item = {
 
 type PaymentMode = "cash" | "upi" | "split";
 
+const roundMoney = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100;
+
+const isSameAmount = (a: number, b: number) =>
+  Math.abs(roundMoney(a) - roundMoney(b)) < 0.01;
+
+const generateBillNo = () =>
+  `BILL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
 export default function AddBill() {
-
-  /* ---------------- STATE ---------------- */
-
   const [customer, setCustomer] = useState<Customer>({
     name: "",
     type: "",
@@ -28,24 +40,37 @@ export default function AddBill() {
   });
 
   const [previousBills, setPreviousBills] = useState<any[]>([]);
-  const [selectedBill, setSelectedBill] = useState<any | null>(null);
+  const [selectedBill, setSelectedBill] = useState<any | null>(
+    null
+  );
   const [upiAccount, setUpiAccount] = useState("");
 
   const [items, setItems] = useState<Item[]>([
     { name: "", qty: 0, rate: 0, total: 0 },
   ]);
 
-  const [billNo] = useState(`BILL-${Date.now()}`);
-  const [message, setMessage] = useState("");
+  const [billNo, setBillNo] = useState(generateBillNo);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
 
-  const [expanded, setExpanded] = useState({ 1: true, 2: true });
+  const [expanded, setExpanded] = useState({
+    1: true,
+    2: true,
+  });
   const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  /* ---------------- SUCCESS POPUP STATE ---------------- */
-
-  const [savedBillData, setSavedBillData] = useState<any | null>(null);
-
-  /* ---------------- PAYMENT ---------------- */
+  const [savedBillData, setSavedBillData] = useState<any | null>(
+    null
+  );
 
   const [showPayment, setShowPayment] = useState(false);
   const [isSavingBill, setIsSavingBill] = useState(false);
@@ -58,8 +83,6 @@ export default function AddBill() {
   const [upiAmount, setUpiAmount] = useState(0);
   const [upiId, setUpiId] = useState("");
 
-  /* ---------------- PREVIOUS BILLS FETCH ---------------- */
-
   useEffect(() => {
     if (customer.mobile.length !== 10) {
       setPreviousBills([]);
@@ -68,9 +91,13 @@ export default function AddBill() {
 
     const fetchPreviousBills = async () => {
       try {
-        const res = await fetch(`/api/bills?mobile=${customer.mobile}`);
+        const res = await fetch(
+          `/api/bills?mobile=${customer.mobile}`
+        );
         const data = await res.json();
-        if (res.ok) setPreviousBills(data.bills || []);
+        if (res.ok) {
+          setPreviousBills(data.bills || []);
+        }
       } catch {
         setPreviousBills([]);
       }
@@ -79,48 +106,47 @@ export default function AddBill() {
     fetchPreviousBills();
   }, [customer.mobile]);
 
-  /* ---------------- TOTALS ---------------- */
-
   const grandTotal = useMemo(
-    () => items.reduce((s, i) => s + i.total, 0),
+    () =>
+      roundMoney(
+        items.reduce(
+          (sum, item) =>
+            sum +
+            Number(item.qty || 0) * Number(item.rate || 0),
+          0
+        )
+      ),
     [items]
   );
 
   const finalTotal = useMemo(
-    () => Math.max(grandTotal - discount, 0),
+    () => Math.max(roundMoney(grandTotal - discount), 0),
     [grandTotal, discount]
   );
 
-  /* ---------------- AUTO SPLIT ---------------- */
-/* ================= AUTO PAYMENT CALCULATION ================= */
+  useEffect(() => {
+    if (paymentMode === "cash") {
+      setCashAmount(finalTotal);
+      setUpiAmount(0);
+    }
 
-useEffect(() => {
-  if (paymentMode === "cash") {
-    setCashAmount(finalTotal);
-    setUpiAmount(0);
-  }
+    if (paymentMode === "upi") {
+      setCashAmount(0);
+      setUpiAmount(finalTotal);
+    }
 
-  if (paymentMode === "upi") {
-    setCashAmount(0);
-    setUpiAmount(finalTotal);
-  }
+    if (paymentMode === "split") {
+      setCashAmount(finalTotal);
+      setUpiAmount(0);
+    }
+  }, [paymentMode, finalTotal]);
 
-  if (paymentMode === "split") {
-    setCashAmount(finalTotal);
-    setUpiAmount(0);
-  }
-}, [paymentMode]);
-
-/* ================= SPLIT LIVE UPDATE ================= */
-
-useEffect(() => {
-  if (paymentMode === "split") {
-    const remaining = finalTotal - cashAmount;
-    setUpiAmount(remaining > 0 ? remaining : 0);
-  }
-}, [cashAmount, finalTotal, paymentMode]);
-
-  /* ---------------- ITEM LOGIC ---------------- */
+  useEffect(() => {
+    if (paymentMode === "split") {
+      const remaining = finalTotal - cashAmount;
+      setUpiAmount(remaining > 0 ? remaining : 0);
+    }
+  }, [cashAmount, finalTotal, paymentMode]);
 
   const handleItemChange = (
     index: number,
@@ -129,88 +155,196 @@ useEffect(() => {
     const { name, value } = e.target;
     const newItems = [...items];
 
-    if (name === "name") newItems[index].name = value;
+    if (name === "name") {
+      newItems[index].name = value;
+    }
+
     if (name === "qty" || name === "rate") {
       const digitsOnly = value.replace(/\D/g, "");
-      const numericValue = digitsOnly === "" ? 0 : Number(digitsOnly);
+      const numericValue =
+        digitsOnly === "" ? 0 : Number(digitsOnly);
 
       if (name === "qty") newItems[index].qty = numericValue;
       if (name === "rate") newItems[index].rate = numericValue;
     }
 
-    newItems[index].total =
-      newItems[index].qty * newItems[index].rate;
+    newItems[index].total = roundMoney(
+      newItems[index].qty * newItems[index].rate
+    );
 
     setItems(newItems);
   };
 
   const addItem = () => {
-    setItems([...items, { name: "", qty: 0, rate: 0, total: 0 }]);
+    setItems([
+      ...items,
+      { name: "", qty: 0, rate: 0, total: 0 },
+    ]);
+
     setTimeout(() => {
       itemRefs.current[itemRefs.current.length - 1]?.focus();
     }, 0);
   };
 
-  const removeItem = (i: number) =>
-    setItems(items.filter((_, idx) => idx !== i));
+  const removeItem = (index: number) =>
+    setItems(items.filter((_, i) => i !== index));
 
-  /* ---------------- SAVE BILL ---------------- */
+  const showError = (message: string) => {
+    setSavePopup({
+      open: true,
+      status: "error",
+      title: "Save failed",
+      message,
+    });
+  };
 
   const saveBill = async () => {
-    if (cashAmount + upiAmount !== finalTotal) {
-      setMessage("❌ Payment total mismatch");
-      return;
+
+    const normalizedMobile = customer.mobile.trim();
+    if (normalizedMobile.length !== 10) {
+      showError("Enter valid 10-digit mobile number");
+      return false;
     }
 
+    if (!customer.name.trim() || !customer.type.trim()) {
+      showError("Customer name and type are required");
+      return false;
+    }
+
+    const normalizedItems = items.map((item) => ({
+      name: (item.name || "").trim(),
+      qty: Number(item.qty || 0),
+      rate: Number(item.rate || 0),
+      total: roundMoney(
+        Number(item.qty || 0) * Number(item.rate || 0)
+      ),
+    }));
+
+    const validItems = normalizedItems.filter(
+      (item) =>
+        item.name.length > 0 &&
+        Number.isFinite(item.qty) &&
+        item.qty > 0 &&
+        Number.isFinite(item.rate) &&
+        item.rate >= 0
+    );
+
+    if (validItems.length === 0) {
+      showError("Add at least one valid item");
+      return false;
+    }
+
+    const hasInvalidRows = normalizedItems.some((item) => {
+      const hasAnyInput =
+        item.name.length > 0 || item.qty > 0 || item.rate > 0;
+
+      if (!hasAnyInput) return false;
+
+      return (
+        item.name.length === 0 ||
+        !Number.isFinite(item.qty) ||
+        item.qty <= 0 ||
+        !Number.isFinite(item.rate) ||
+        item.rate < 0
+      );
+    });
+
+    if (hasInvalidRows) {
+      showError("Fix invalid item rows before saving");
+      return false;
+    }
+
+    const computedGrandTotal = roundMoney(
+      validItems.reduce((sum, item) => sum + item.total, 0)
+    );
+    const safeDiscount = Math.max(Number(discount || 0), 0);
+    const computedFinalTotal = Math.max(
+      roundMoney(computedGrandTotal - safeDiscount),
+      0
+    );
+
+    if (computedGrandTotal <= 0) {
+      showError("Total must be greater than 0");
+      return false;
+    }
+
+    if (
+      !isSameAmount(
+        Number(cashAmount || 0) + Number(upiAmount || 0),
+        computedFinalTotal
+      )
+    ) {
+      showError("Payment total mismatch");
+      return false;
+    }
+
+    setSavePopup({
+      open: true,
+      status: "saving",
+      title: "Saving bill",
+      message: "Please wait while we save bill data.",
+    });
+
     try {
-      await fetch("/api/customers", {
+      const customerRes = await fetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customer),
+        body: JSON.stringify({
+          ...customer,
+          mobile: normalizedMobile,
+        }),
       });
+
+      if (!customerRes.ok) {
+        const customerErr = await customerRes
+          .json()
+          .catch(() => ({}));
+        showError(
+          customerErr?.error ||
+            "Failed to save customer details"
+        );
+        return false;
+      }
 
       const res = await fetch("/api/bills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billNo,
-          mobile: customer.mobile,
-          items,
-          grandTotal,
-          discount,
-          finalTotal,
+          mobile: normalizedMobile,
+          items: validItems,
+          grandTotal: computedGrandTotal,
+          discount: safeDiscount,
+          finalTotal: computedFinalTotal,
           paymentMode,
           cashAmount,
           upiAmount,
           upiId: paymentMode !== "cash" ? upiId : null,
-          upiAccount: paymentMode !== "cash" ? upiAccount : null,
+          upiAccount:
+            paymentMode !== "cash" ? upiAccount : null,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        setMessage(`❌ ${err.error}`);
-        return;
+        showError(err?.error || "Failed to save bill");
+        return false;
       }
-
-      /* -------- SUCCESS -------- */
 
       setSavedBillData({
         billNo,
         customerName: customer.name,
-        mobile: customer.mobile,
-        items,
-        grandTotal,
-        discount,
-        finalTotal,
+        mobile: normalizedMobile,
+        items: validItems,
+        grandTotal: computedGrandTotal,
+        discount: safeDiscount,
+        finalTotal: computedFinalTotal,
         paymentMode,
         cashAmount,
         upiAmount,
       });
 
       setShowPayment(false);
-
-      // reset form
       setCustomer({ name: "", type: "", city: "", mobile: "" });
       setItems([{ name: "", qty: 0, rate: 0, total: 0 }]);
       setDiscount(0);
@@ -218,9 +352,12 @@ useEffect(() => {
       setUpiAmount(0);
       setUpiId("");
       setUpiAccount("");
-
+      setBillNo(generateBillNo());
+      setSavePopup((prev) => ({ ...prev, open: false }));
+      return true;
     } catch {
-      setMessage("❌ Something went wrong");
+      showError("Something went wrong");
+      return false;
     }
   };
 
@@ -235,23 +372,18 @@ useEffect(() => {
     }
   };
 
-  /* ---------------- UI ---------------- */
-
   return (
     <ProtectedRoute>
       <div className="max-w-5xl mx-auto bg-white border rounded-xl p-4 space-y-6">
-
-        <h1 className="text-3xl font-bold text-black">
-          cheek 
-        </h1>
-
-        {message && <p className="text-sm">{message}</p>}
+        <h1 className="text-3xl font-bold text-black">Add Bill</h1>
 
         <CustomerSection
           customer={customer}
           setCustomer={setCustomer}
           expanded={expanded[1]}
-          toggle={() => setExpanded((p) => ({ ...p, 1: !p[1] }))}
+          toggle={() =>
+            setExpanded((prev) => ({ ...prev, 1: !prev[1] }))
+          }
         />
 
         <PreviousBillsModal
@@ -260,13 +392,14 @@ useEffect(() => {
           previousBills={previousBills}
           customer={customer}
         />
+
         {previousBills.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
             <button
               onClick={() => setSelectedBill("LIST")}
               className="text-sm font-medium text-blue-700"
             >
-              📄 Previous Bills ({previousBills.length})
+              Previous Bills ({previousBills.length})
             </button>
           </div>
         )}
@@ -274,7 +407,9 @@ useEffect(() => {
         <ItemsTable
           items={items}
           expanded={expanded[2]}
-          toggle={() => setExpanded((p) => ({ ...p, 2: !p[2] }))}
+          toggle={() =>
+            setExpanded((prev) => ({ ...prev, 2: !prev[2] }))
+          }
           itemRefs={itemRefs}
           onItemChange={handleItemChange}
           onAddItem={addItem}
@@ -283,7 +418,7 @@ useEffect(() => {
 
         <div className="flex justify-between bg-gray-50 border p-4 rounded-lg">
           <span className="font-semibold">Grand Total</span>
-          <span className="font-bold text-lg">₹ {grandTotal}</span>
+          <span className="font-bold text-lg">Rs. {grandTotal}</span>
         </div>
 
         <button
@@ -302,7 +437,7 @@ useEffect(() => {
           setDiscount={setDiscount}
           paymentMode={paymentMode}
           setPaymentMode={setPaymentMode}
-           setUpiAmount={setUpiAmount}
+          setUpiAmount={setUpiAmount}
           cashAmount={cashAmount}
           setCashAmount={setCashAmount}
           upiAmount={upiAmount}
@@ -316,53 +451,39 @@ useEffect(() => {
         />
       )}
 
-      {isSavingBill && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center px-4">
-          <div className="w-full max-w-xs rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex flex-col items-center gap-4">
-              <img
-                src="/Sj.png"
-                alt="Saving bill"
-                className="h-20 w-20 animate-pulse"
-              />
-              <p className="text-sm font-medium text-gray-700">
-                Saving bill, please wait...
-              </p>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                <div className="h-full w-full bg-blue-600 animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= SUCCESS POPUP ================= */}
-
       {savedBillData && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-sm rounded-xl p-6 space-y-4 text-center">
-
             <h2 className="text-lg font-semibold text-green-600">
-              ✅ Bill Saved Successfully
+              Bill Saved Successfully
             </h2>
 
             <button
               onClick={() => openWhatsApp(savedBillData)}
               className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold"
             >
-              📲 Send WhatsApp
+              Send WhatsApp
             </button>
+
             <button
               onClick={() => setSavedBillData(null)}
               className="w-full text-gray-500"
             >
               Done
             </button>
-        
           </div>
         </div>
       )}
 
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
+      />
     </ProtectedRoute>
   );
 }

@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BillCard from "@/components/billing/BillCard";
 import BillViewModal from "@/components/billing/BillViewModal";
 import BillEditModal from "@/components/billing/BillEditModal";
 import FloatingAddButton from "@/components/billing/FloatingAddButton";
 import DailySaleSummary from "@/components/billing/DailySaleSummary";
+import SaveStatusPopup, {
+  type SavePopupStatus,
+} from "@/components/ui/SaveStatusPopup";
 
 export default function ViewBills() {
   const [bills, setBills] = useState<any[]>([]);
@@ -31,6 +34,19 @@ export default function ViewBills() {
   /* ================= DAILY SALE STATE ================= */
   const [dailySale, setDailySale] = useState<any | null>(null);
   const [closing, setClosing] = useState(false);
+  const [savePopup, setSavePopup] = useState<{
+    open: boolean;
+    status: SavePopupStatus;
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "saving",
+    title: "",
+    message: "",
+  });
+  const billsAbortRef = useRef<AbortController | null>(null);
+  const billsReqIdRef = useRef(0);
 
   /* ================= FETCH DAILY SALE ================= */
   async function fetchDailySale() {
@@ -38,7 +54,12 @@ export default function ViewBills() {
       const res = await fetch("/api/daily-sale");
 
       if (!res.ok) {
-        console.error("Failed to fetch daily sale");
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Load failed",
+          message: "Failed to fetch daily sale.",
+        });
         return;
       }
 
@@ -55,6 +76,12 @@ export default function ViewBills() {
 
     try {
       setClosing(true);
+      setSavePopup({
+        open: true,
+        status: "saving",
+        title: "Closing day",
+        message: "Please wait while we close today's fast sale.",
+      });
 
       const res = await fetch("/api/daily-sale/close", {
         method: "POST",
@@ -63,17 +90,32 @@ export default function ViewBills() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data?.error || "Close failed");
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Close failed",
+          message: data?.error || "Close failed",
+        });
         return;
       }
 
-      alert("Day closed successfully!");
+      setSavePopup({
+        open: true,
+        status: "success",
+        title: "Day closed",
+        message: "Day closed successfully.",
+      });
 
       await fetchDailySale();
       await fetchBills(1, true);
     } catch (err) {
       console.error("Close day error:", err);
-      alert("Close failed");
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Close failed",
+        message: "Close failed",
+      });
     } finally {
       setClosing(false);
     }
@@ -92,21 +134,44 @@ export default function ViewBills() {
 
   /* ================= FETCH BILLS ================= */
   async function fetchBills(newPage = 1, reset = false) {
-    if (loading) return;
+    if (loading && !reset) return;
+
+    if (reset && billsAbortRef.current) {
+      billsAbortRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    const requestId = ++billsReqIdRef.current;
+    if (reset) {
+      billsAbortRef.current = controller;
+    }
 
     try {
       setLoading(true);
 
-      const res = await fetch(
-        `/api/bills?page=${newPage}&limit=15&search=${debouncedSearch}&from=${fromDate}&to=${toDate}`
-      );
+      const params = new URLSearchParams({
+        page: String(newPage),
+        limit: "15",
+        search: debouncedSearch,
+        from: fromDate,
+        to: toDate,
+      });
+      const res = await fetch(`/api/bills?${params.toString()}`, {
+        signal: controller.signal,
+      });
 
       if (!res.ok) {
-        console.error("Failed to fetch bills");
+        setSavePopup({
+          open: true,
+          status: "error",
+          title: "Load failed",
+          message: "Failed to fetch bills.",
+        });
         return;
       }
 
       const data = await res.json();
+      if (requestId !== billsReqIdRef.current) return;
 
       if (reset) {
         setBills(data.bills || []);
@@ -125,9 +190,24 @@ export default function ViewBills() {
         totalAmount: Number(data?.totalAmount || 0),
       });
     } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
       console.error("Fetch bills error:", err);
+      setSavePopup({
+        open: true,
+        status: "error",
+        title: "Load failed",
+        message: "Unable to load bills right now.",
+      });
     } finally {
-      setLoading(false);
+      if (
+        requestId === billsReqIdRef.current &&
+        !controller.signal.aborted
+      ) {
+        setLoading(false);
+      }
+      if (reset && billsAbortRef.current === controller) {
+        billsAbortRef.current = null;
+      }
     }
   }
 
@@ -145,6 +225,14 @@ export default function ViewBills() {
 
   useEffect(() => {
     fetchDailySale();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (billsAbortRef.current) {
+        billsAbortRef.current.abort();
+      }
+    };
   }, []);
 
   /* ================= INFINITE SCROLL ================= */
@@ -308,6 +396,16 @@ export default function ViewBills() {
         bill={editBill}
         onClose={() => setEditBill(null)}
         onUpdated={() => fetchBills(1, true)}
+      />
+
+      <SaveStatusPopup
+        open={savePopup.open}
+        status={savePopup.status}
+        title={savePopup.title}
+        message={savePopup.message}
+        onClose={() =>
+          setSavePopup((prev) => ({ ...prev, open: false }))
+        }
       />
     </div>
   );
