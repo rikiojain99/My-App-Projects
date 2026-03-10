@@ -66,6 +66,8 @@ export default function PaymentModal({
     "Home",
     "End",
   ];
+  const isSameAmount = (a: number, b: number) =>
+    Math.abs(a - b) < 0.01;
 
   /* ================= SYNC DISCOUNT ================= */
 
@@ -104,12 +106,17 @@ export default function PaymentModal({
     }
   }, [cashAmount, finalTotal, paymentMode]);
 
+  const hasUpiAccount = upiAccount.trim().length > 0;
   const isValid =
     paymentMode === "cash"
-      ? cashAmount === finalTotal
+      ? isSameAmount(cashAmount, finalTotal) &&
+        upiAmount === 0
       : paymentMode === "upi"
-      ? upiAmount === finalTotal && upiAccount
-      : cashAmount + upiAmount === finalTotal;
+      ? isSameAmount(upiAmount, finalTotal) &&
+        cashAmount === 0 &&
+        hasUpiAccount
+      : isSameAmount(cashAmount + upiAmount, finalTotal) &&
+        (upiAmount === 0 || hasUpiAccount);
   const saving = isSaving || isSubmitting;
 
   const handleSave = async () => {

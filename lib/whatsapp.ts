@@ -33,31 +33,23 @@ export function openWhatsApp(bill: any) {
   }
 
  const message = `
- *Bill Estimate*
+ *Estimate*
 -----------------------------
-
  Customer: *${customerName || "Valued Customer"}*
  Customer Number: ${mobile || "N/A"}
  Date: ${date}
 
 -----------------------------
   *ITEM DETAILS*
-
 ${itemLines}
-
 -----------------------------
-
   *BILL SUMMARY*
-
 Subtotal : Rs.${grandTotal}
 Discount : Rs.${discount || 0}
 -----------------------------
 *TOTAL : Rs.${finalTotal}*
-
 -----------------------------
-
 ${paymentBlock}
-
 -----------------------------
 
  Thank you for shopping with us!`;

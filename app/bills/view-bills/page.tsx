@@ -193,7 +193,6 @@ export default function ViewBills() {
           </button>
         </div>
 
-        {/* ================= DAILY SALE SUMMARY ================= */}
 {/* ================= DAILY SALE SUMMARY ================= */}
 {dailySale && !dailySale.isClosed && (
   <DailySaleSummary
@@ -255,7 +254,7 @@ export default function ViewBills() {
           </>
         )}
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-gray-200 bg-white p-3">
             <p className="text-xs text-gray-500">Filtered Bills</p>
             <p className="text-xl font-semibold text-gray-900">

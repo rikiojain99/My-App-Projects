@@ -15,6 +15,8 @@ export interface IDailySaleTransaction {
   paymentMode: "cash" | "upi" | "split";
   cashAmount: number;
   upiAmount: number;
+  upiId?: string | null;
+  upiAccount?: string | null;
   createdAt: Date;
 }
 
@@ -54,6 +56,8 @@ const DailySaleSchema = new Schema<IDailySale>(
         paymentMode: String,
         cashAmount: { type: Number, default: 0 },
         upiAmount: { type: Number, default: 0 },
+        upiId: { type: String, default: null },
+        upiAccount: { type: String, default: null },
         createdAt: Date,
       },
     ],

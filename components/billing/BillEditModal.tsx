@@ -250,7 +250,7 @@ export default function BillEditModal({
 
                 {activeItemRow === i &&
                   String(it.name || "").trim().length >= 2 && (
-                  <div className="absolute left-0 right-[6.5rem] top-[calc(100%+0.2rem)] z-30 max-h-40 overflow-y-auto rounded border bg-white shadow">
+                  <div className="absolute left-0 right-\[6\.5rem\ top-[calc(100%+0.2rem)] z-30 max-h-40 overflow-y-auto rounded border bg-white shadow">
                     {loadingSuggestions ? (
                       <p className="px-2 py-1 text-xs text-gray-500">
                         Loading...

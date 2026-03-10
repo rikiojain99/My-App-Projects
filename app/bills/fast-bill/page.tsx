@@ -163,6 +163,9 @@ export default function FastBill() {
           paymentMode,
           cashAmount,
           upiAmount,
+          upiId: paymentMode !== "cash" ? upiId : null,
+          upiAccount:
+            paymentMode !== "cash" ? upiAccount : null,
         }),
       });
 

@@ -6,7 +6,7 @@ export default function BillCard({
   onEdit,
 }: any) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 flex justify-between items-center">
+    <div className="bg-white rounded-xl shadow-sm p-3 flex justify-between items-center">
 
       <div onClick={onView} className="cursor-pointer">
         <p className="font-semibold">
@@ -16,7 +16,7 @@ export default function BillCard({
           {bill.customerId?.mobile}
         </p>
         <p className="text-xs text-gray-400">
-          #{bill.billNo}
+          {/* #{bill.billNo} */}
         </p>
       </div>
 

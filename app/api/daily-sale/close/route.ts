@@ -3,12 +3,16 @@ import dbConnect from "@/lib/mongodb";
 import DailySale from "@/models/DailySale";
 import Bill from "@/models/Bill";
 import Customer from "@/models/Customer";
+import { getBusinessDateKey } from "@/lib/date/getBusinessDateKey";
+
+const roundMoney = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100;
 
 export async function POST() {
   try {
     await dbConnect();
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getBusinessDateKey();
 
     const dailySale = await DailySale.findOne({
       date: today,
@@ -24,25 +28,73 @@ export async function POST() {
 
     /* ================= MERGE ITEMS ================= */
 
-    const itemMap: Record<string, any> = {};
+    const itemMap: Record<
+      string,
+      {
+        name: string;
+        qty: number;
+        total: number;
+      }
+    > = {};
 
     dailySale.transactions.forEach((entry: any) => {
       entry.items.forEach((item: any) => {
-        if (!itemMap[item.name]) {
-          itemMap[item.name] = {
-            name: item.name,
+        const name = String(item?.name || "").trim();
+        const qty = Number(item?.qty || 0);
+        const total = roundMoney(
+          Number(item?.total ?? qty * Number(item?.rate || 0))
+        );
+
+        if (!name || !Number.isFinite(qty) || qty <= 0) {
+          return;
+        }
+
+        if (!itemMap[name]) {
+          itemMap[name] = {
+            name,
             qty: 0,
-            rate: item.rate,
             total: 0,
           };
         }
 
-        itemMap[item.name].qty += item.qty;
-        itemMap[item.name].total += item.total;
+        itemMap[name].qty += qty;
+        itemMap[name].total = roundMoney(
+          itemMap[name].total + total
+        );
       });
     });
 
-    const mergedItems = Object.values(itemMap);
+    const mergedItems = Object.values(itemMap).map((item) => {
+      const qty = roundMoney(item.qty);
+      const total = roundMoney(item.total);
+
+      return {
+        name: item.name,
+        qty,
+        rate: qty > 0 ? roundMoney(total / qty) : 0,
+        total,
+      };
+    });
+
+    const mergedGrandTotal = roundMoney(
+      mergedItems.reduce(
+        (sum, item) => sum + Number(item.total || 0),
+        0
+      )
+    );
+    const finalTotal = roundMoney(
+      Number(dailySale.totalRevenue || 0)
+    );
+    const discount = Math.max(
+      roundMoney(mergedGrandTotal - finalTotal),
+      0
+    );
+    const totalCash = roundMoney(
+      Number(dailySale.totalCash || 0)
+    );
+    const totalUpi = roundMoney(
+      Number(dailySale.totalUpi || 0)
+    );
 
     /* ================= WALK-IN CUSTOMER ================= */
 
@@ -61,20 +113,39 @@ export async function POST() {
 
     const billNo = `FAST-${today.replace(/-/g, "")}`;
 
-    const bill = await Bill.create({
-      billNo,
-      customerId: customer._id,
-      items: mergedItems,
-      grandTotal: dailySale.totalRevenue,
-      discount: 0,
-      finalTotal: dailySale.totalRevenue,
-      paymentMode: "split",
-      cashAmount: dailySale.totalCash,
-      upiAmount: dailySale.totalUpi,
-      upiId: null,
-      upiAccount: null,
-      isFastBill: true,
-    });
+    let bill: any;
+
+    try {
+      bill = await Bill.create({
+        billNo,
+        customerId: customer._id,
+        items: mergedItems,
+        grandTotal: mergedGrandTotal,
+        discount,
+        finalTotal,
+        paymentMode: "split",
+        cashAmount: totalCash,
+        upiAmount: totalUpi,
+        upiId: null,
+        upiAccount: null,
+        isFastBill: true,
+      });
+    } catch (err: any) {
+      const duplicateBillNo =
+        err?.code === 11000 ||
+        String(err?.message || "").includes("E11000");
+
+      if (!duplicateBillNo) {
+        throw err;
+      }
+
+      const existingBill = await Bill.findOne({ billNo });
+      if (!existingBill) {
+        throw err;
+      }
+
+      bill = existingBill;
+    }
 
     dailySale.isClosed = true;
     dailySale.convertedBillId = bill._id;
