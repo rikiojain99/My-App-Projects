@@ -26,6 +26,10 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const limitParam = Number(searchParams.get("limit") || 0);
+  const title = (searchParams.get("title") || "").trim();
+  const category = (searchParams.get("category") || "").trim();
+  const search = (searchParams.get("search") || "").trim();
 
   let query: any = {};
 
@@ -35,8 +39,51 @@ export async function GET(req: Request) {
     if (to) query.date.$lte = new Date(to);
   }
 
-  const expenses = await Expense.find(query)
-    .sort({ date: -1 });
+  if (title) {
+    query.title = {
+      $regex: title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+      $options: "i",
+    };
+  }
+
+  if (category) {
+    query.category = {
+      $regex: category.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      ),
+      $options: "i",
+    };
+  }
+
+  if (search) {
+    const escapedSearch = search.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+    query.$or = [
+      { title: { $regex: escapedSearch, $options: "i" } },
+      {
+        category: {
+          $regex: escapedSearch,
+          $options: "i",
+        },
+      },
+      { note: { $regex: escapedSearch, $options: "i" } },
+    ];
+  }
+
+  const findQuery = Expense.find(query).sort({ date: -1 });
+
+  if (
+    Number.isFinite(limitParam) &&
+    limitParam > 0
+  ) {
+    findQuery.limit(Math.min(limitParam, 1000));
+  }
+
+  const expenses = await findQuery;
 
   return NextResponse.json(expenses);
 }

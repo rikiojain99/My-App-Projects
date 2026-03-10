@@ -34,11 +34,11 @@ export default function ItemsTable({
   onRemoveItem,
 }: Props) {
   return (
-    <div className="mb-6 border rounded-xl bg-white shadow-sm p-4">
+    <div className="mb-6 border rounded-xl bg-white shadow-sm p-1.5">
 
       {/* ================= HEADER ================= */}
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="font-semibold text-lg text-black">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="font-semibold text-lg ml-2 text-black">
           Items ({items.length})
         </h2>
 
@@ -53,13 +53,14 @@ export default function ItemsTable({
 
       {/* ================= TABLE HEADER ================= */}
       {expanded && (
-        <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-500 border-b pb-2 mb-2">
-          <div className="col-span-1 text-center">No.</div>
-          <div className="col-span-4">Item</div>
-          <div className="col-span-2 text-center">Qty</div>
-          <div className="col-span-2 text-center">Rate</div>
-          <div className="col-span-2 text-center">Total</div>
-          <div className="col-span-1"></div>
+        <div className="grid grid-cols-36 gap-1 text-sm font-medium text-gray-500 border-b pb-1 mb-1">
+          <div className="col-span-2 text-center">N.</div>
+          <div className="col-span-4 text-center">Qty</div>
+
+          <div className="col-span-16">Item </div>
+          <div className="col-span-4 text-center">Rate</div>
+          <div className="col-span-4 text-center">Total</div>
+          <div className="col-span-2"></div>
         </div>
       )}
 
@@ -68,7 +69,7 @@ export default function ItemsTable({
         items.map((item, i) => (
           <div
             key={i}
-            className="grid grid-cols-12 gap-2 items-center mb-2"
+            className="grid grid-cols-36 gap-1  items-center mb-2"
           >
             {/* Row Number */}
             <div className="col-span-1 text-center font-medium text-gray-600">
@@ -89,12 +90,12 @@ export default function ItemsTable({
                   e.preventDefault();
                 }
               }}
-              className="col-span-2 border rounded-lg p-2 text-center focus:ring-2 focus:ring-blue-400 outline-none"
+              className="col-span-5 border rounded-lg py-2 px-0 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
 
 
             {/* Item Name */}
-            <div className="col-span-4">
+            <div className="col-span-17">
               <ItemNameInput
                 ref={(el) => {
                   itemRefs.current[i] = el;
@@ -121,12 +122,12 @@ export default function ItemsTable({
                   e.preventDefault();
                 }
               }}
-              className="col-span-2 border rounded-lg p-2 text-center focus:ring-2 focus:ring-blue-400 outline-none"
+              className="col-span-5 border rounded-lg py-2 px-0 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
 
             {/* Total */}
-            <div className="col-span-2 border rounded-lg p-2 text-center font-semibold bg-gray-50">
-              ₹ {item.total}
+            <div className="col-span-6 border rounded-lg py-2 px-0 text-center font-semibold bg-gray-50">
+               {item.total}
             </div>
 
             {/* Remove Button */}

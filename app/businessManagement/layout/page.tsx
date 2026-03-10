@@ -78,6 +78,7 @@ export default function Home() {
           <DashboardLink href="/reports/stockReport" icon="📊" label="Stock Report" />
           <DashboardLink href="/stock-report" icon="🧾" label="Stock Report (Legacy)" />
           <DashboardLink href="/expenses/add-expense" icon="💸" label="Add Expense" />
+          <DashboardLink href="/expenses/view-expenses" icon="📄" label="View Expenses" />
         </Section>
 
         <Section

@@ -56,7 +56,7 @@ export default function PaymentModal({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const upiAccounts = ["ID-1", "ID-2", "ID-3"];
+  const upiAccounts = ["Vinay", "Chirag", "SJ","Others"];
   const numberKeys = [
     "Backspace",
     "Delete",

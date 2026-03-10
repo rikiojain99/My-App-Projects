@@ -228,3 +228,6 @@ npx tsc --noEmit
 - Some legacy misspelled routes remain for backward compatibility:
   - `add-stoock`, `add-inventry`, `view-inventry`, `api/inventry`
 - Clean alias routes were added and should be used going forward.
+
+
+

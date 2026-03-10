@@ -249,8 +249,8 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           ref={ref}
           name="name"
           value={query}
-          placeholder="Item name"
-          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition duration-150 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+          placeholder=" Item"
+          className="w-full rounded-xl border border-slate-300 bg-white px-1 py-2 text-sm text-slate-800 shadow-sm outline-none transition duration-150 placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
           role="combobox"
           aria-expanded={shouldShowDropdown}
           aria-controls={listboxId}
@@ -300,7 +300,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
             role="option"
             aria-selected={activeIndex === suggestionIndex}
             className={`cursor-pointer
-              px-1 py-1 text-lg sm:text-sm sm:px-1 sm:py-1  
+              px-1 py-1 text-lg sm:text-sm sm:px-2 sm:py-3  
               transition
               ${activeIndex === suggestionIndex
                 ? "bg-sky-100 text-sky-900"
@@ -345,7 +345,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
 )}
         {/* STOCK STATUS */}
         {stockQty !== null && (
-          <p className="mt-1 text-xs">
+          <p className="mx-2 text-xs">
             {stockQty > 0 ? (
               <span className="text-emerald-700">
                 stock: {stockQty}
