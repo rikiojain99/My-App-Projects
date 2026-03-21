@@ -428,19 +428,20 @@ export default function StockHistoryManager() {
       <div className="min-h-screen bg-slate-50 text-slate-900">
         <div className="mx-auto max-w-7xl p-4 md:p-8 space-y-6">
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-1 lg:flex-row lg:items-end lg:justify-between">
+              <div className="col-span-2  w-full">
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
                   Inventory
                 </p>
-                <h1 className="text-3xl font-bold tracking-tight">
+                {/* <h1 className="text-3xl font-bold tracking-tight">
                   Stock History Manager
-                </h1>
-                <p className="max-w-2xl text-sm text-slate-600">
+                </h1> */}
+                {/* <p className="max-w-2xl text-sm text-slate-600">
                   See vendor name, purchase date, item details, and
                   update the stock entry information from one place.
-                </p>
+                </p> */}
               </div>
+              <div className="col-span-1 grid w-full">
 
               <button
                 type="button"
@@ -449,48 +450,23 @@ export default function StockHistoryManager() {
               >
                 Refresh
               </button>
+</div>
             </div>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <MetricCard
-              label="Entries"
-              value={String(filteredStocks.length)}
-              caption="Visible stock records"
-            />
-            <MetricCard
-              label="Total Value"
-              value={formatCurrency(totalValue)}
-              caption="Filtered stock spend"
-            />
-            <MetricCard
-              label="Vendors"
-              value={String(
-                new Set(
-                  filteredStocks.map((stock) =>
-                    stock.vendorName.trim().toLowerCase()
-                  )
-                ).size
-              )}
-              caption="Unique vendor names"
-            />
-            <MetricCard
-              label="Total Qty"
-              value={String(totalQty)}
-              caption="Purchased quantity in view"
-            />
-          </section>
+         
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-lg font-semibold">
-                  Search and filters
+                  Search
                 </h2>
-                <p className="text-sm text-slate-500">
+                
+                {/* <p className="text-sm text-slate-500">
                   Search by vendor or item and filter by vendor or
                   purchase date.
-                </p>
+                </p> */}
               </div>
 
               <button
@@ -511,7 +487,7 @@ export default function StockHistoryManager() {
                 className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
               />
 
-              <select
+              {/* <select
                 value={vendorFilter}
                 onChange={(e) => setVendorFilter(e.target.value)}
                 className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
@@ -522,7 +498,7 @@ export default function StockHistoryManager() {
                     {vendor}
                   </option>
                 ))}
-              </select>
+              </select> */}
 
               <input
                 type="date"
@@ -650,17 +626,6 @@ export default function StockHistoryManager() {
                             <h3 className="font-semibold">
                               Update stock entry
                             </h3>
-                            <p className="mt-1 text-sm text-slate-500">
-                              Edit vendor name, purchase date, and stock
-                              item lines here. Stock qty changes will be
-                              adjusted safely against current holdings.
-                            </p>
-                            <p className="mt-1 text-xs text-slate-400">
-                              Item line totals control the saved grand
-                              total. Extra expense is kept as a reference
-                              value.
-                            </p>
-
                             <div className="mt-4 grid gap-3 md:grid-cols-3">
                               <input
                                 type="text"
@@ -883,7 +848,7 @@ export default function StockHistoryManager() {
                             </tbody>
                           </table>
                         </div>
-
+{/* 
                         <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
                           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                             <span className="font-medium text-slate-900">
@@ -911,7 +876,7 @@ export default function StockHistoryManager() {
                             </span>{" "}
                             {stock._id}
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                     )}
                   </article>
@@ -944,14 +909,14 @@ function MetricCard({
   caption: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="text-sm font-medium text-slate-500">
+    <div className="rounded-2xl border grid grid-cols-3 gap-1 border-slate-200 bg-white px-3 py-2 shadow-sm">
+      <div className="text-lg col-span-2 w-full font-medium text-slate-900">
         {label}
       </div>
-      <div className="mt-2 text-2xl font-bold text-slate-900">
+      <div className="text-lg font-bold col-span-1 w-full text-slate-900">
         {value}
       </div>
-      <div className="mt-1 text-xs text-slate-400">{caption}</div>
+      {/*<div className="mt-1 text-xs text-slate-400">{caption}</div> */}
     </div>
   );
 }
