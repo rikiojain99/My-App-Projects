@@ -36,9 +36,7 @@ export function openWhatsApp(bill: any) {
  *Estimate*
 -----------------------------
  Customer: *${customerName || "Valued Customer"}*
- Customer Number: ${mobile || "N/A"}
  Date: ${date}
-
 -----------------------------
   *ITEM DETAILS*
 ${itemLines}
@@ -51,11 +49,8 @@ Discount : Rs.${discount || 0}
 -----------------------------
 ${paymentBlock}
 -----------------------------
-
  Thank you for shopping with us!`;
-
   const encoded = encodeURIComponent(message.trim());
   const whatsappURL = `https://wa.me/91${mobile}?text=${encoded}`;
-
   window.open(whatsappURL, "_blank");
 }

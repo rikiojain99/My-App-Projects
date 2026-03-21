@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import VendorSection from "@/components/stock/VendorSection";
-import ItemsSection from "@/components/stock/ItemsSection";
+import ItemsTable from "@/components/stock/ItemsTable";
 import ExpenseSection from "@/components/stock/ExpenseSection";
 import TotalsSection from "@/components/stock/TotalsSection";
 import SaveStatusPopup, {
@@ -35,6 +35,7 @@ export default function Stock() {
     message: "",
   });
   const [extraExpense, setExtraExpense] = useState(0);
+  const [itemsExpanded, setItemsExpanded] = useState(true);
 
   const [vendors, setVendors] = useState<string[]>([]);
   const [showVendorSuggestions, setShowVendorSuggestions] = useState(false);
@@ -168,7 +169,7 @@ export default function Stock() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto bg-white border rounded-xl space-y-6 shadow-sm">
+    <div className="p-6 max-w-5xl mx-auto bg-white border rounded-xl space-y-6 shadow-sm">
       <h1 className="text-2xl font-bold">Add Stock</h1>
 
       {message && (
@@ -186,8 +187,10 @@ export default function Stock() {
           setShowVendorSuggestions={setShowVendorSuggestions}
         />
 
-        <ItemsSection
+        <ItemsTable
           items={items}
+          expanded={itemsExpanded}
+          toggle={() => setItemsExpanded((prev) => !prev)}
           handleItemChange={handleItemChange}
           addItem={addItem}
           removeItem={removeItem}

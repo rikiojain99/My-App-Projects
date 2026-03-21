@@ -8,6 +8,9 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const mobile = searchParams.get("mobile");
+  const limitParam = String(searchParams.get("limit") || "10").trim();
+  const shouldFetchAll = limitParam.toLowerCase() === "all";
+  const numericLimit = Number(limitParam);
 
   if (!mobile) {
     return NextResponse.json([], { status: 200 });
@@ -18,13 +21,19 @@ export async function GET(req: Request) {
     return NextResponse.json([], { status: 200 });
   }
 
-  const bills = await Bill.find({
+  const billQuery = Bill.find({
     customerId: customer._id,
     deleted: { $ne: true },
   })
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .lean();
+    .sort({ createdAt: -1 });
 
-  return NextResponse.json(bills);
+  if (!shouldFetchAll && Number.isFinite(numericLimit) && numericLimit > 0) {
+    billQuery.limit(numericLimit);
+  } else if (!shouldFetchAll) {
+    billQuery.limit(10);
+  }
+
+  const rows = await billQuery.lean();
+
+  return NextResponse.json(rows);
 }

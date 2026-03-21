@@ -5,6 +5,7 @@ export interface ICustomer extends Document {
   type: string;
   city: string;
   mobile: string;
+  isDisabled: boolean;
 }
 
 const CustomerSchema: Schema = new Schema(
@@ -13,6 +14,7 @@ const CustomerSchema: Schema = new Schema(
     type: { type: String, required: true },
     city: { type: String },
     mobile: { type: String, required: true, unique: true }, // mobile must be unique
+    isDisabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -1,1 +1,1 @@
-export { default } from "../stockView/page";
+export { default } from "@/components/stock/StockHistoryManager";

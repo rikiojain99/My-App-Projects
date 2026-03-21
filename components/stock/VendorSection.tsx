@@ -20,8 +20,8 @@ export default function VendorSection({
   setShowVendorSuggestions,
 }: Props) {
   return (
-    <>
-      <div className="relative">
+    <div className="flex flex-col-2 gap-4 mb-2">
+      <div className="relative col-span-1 w-full">
         <input
           type="text"
           placeholder="Vendor Name"
@@ -64,9 +64,9 @@ export default function VendorSection({
         type="date"
         value={purchaseDate}
         onChange={(e) => setPurchaseDate(e.target.value)}
-        className="w-full p-3 border rounded"
+        className="w-full p-3 border rounded relative col-span-1 "
         required
       />
-    </>
+    </div>
   );
 }

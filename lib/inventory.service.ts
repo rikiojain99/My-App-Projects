@@ -24,11 +24,35 @@ export async function addStock(
   rate = 0,
   session?: any
 ) {
+  const existingQuery = ItemStock.findOne({ itemName: name });
+  if (session) existingQuery.session(session);
+
+  const existing = await existingQuery;
+  const currentQty = Number(existing?.availableQty || 0);
+  const currentRate = Number(existing?.rate || 0);
+  const incomingQty = Number(qty || 0);
+  const incomingRate = Number(rate || 0);
+  const nextQty = currentQty + incomingQty;
+
+  const nextRate =
+    currentQty > 0 && nextQty > 0
+      ? Number(
+          (
+            (currentQty * currentRate +
+              incomingQty * incomingRate) /
+            nextQty
+          ).toFixed(2)
+        )
+      : incomingRate;
+
   return ItemStock.findOneAndUpdate(
     { itemName: name },
     {
-      $inc: { availableQty: qty },
-      $setOnInsert: { rate },
+      $set: {
+        availableQty: nextQty,
+        rate: nextRate,
+        lastUpdated: new Date(),
+      },
     },
     { upsert: true, session }
   );

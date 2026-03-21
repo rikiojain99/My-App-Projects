@@ -69,6 +69,32 @@ export default function Home() {
         </Section>
 
         <Section
+          id="stock-history"
+          title="Stock History"
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+        >
+          <DashboardLink
+            href="/inventory/stock-view"
+            icon="SH"
+            label="Stock History Manager"
+          />
+        </Section>
+
+        <Section
+          id="customers"
+          title="Customers"
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+        >
+          <DashboardLink
+            href="/customers/details"
+            icon="CU"
+            label="Customer Details"
+          />
+        </Section>
+
+        <Section
           id="reports"
           title="Reports"
           openSection={openSection}
