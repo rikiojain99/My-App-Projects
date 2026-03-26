@@ -63,17 +63,9 @@ export default function Home() {
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/inventory/available-stock" icon="📦" label="Available Stock" />
+          {/* <DashboardLink href="/inventory/available-stock" icon="📦" label="Available Stock" /> */}
           <DashboardLink href="/inventory/stock-holdings" icon="🗂️" label="Manage Stock Details" />
-          <DashboardLink href="/inventory/view-inventory" icon="📑" label="View Inventory" />
-        </Section>
-
-        <Section
-          id="stock-history"
-          title="Stock History"
-          openSection={openSection}
-          setOpenSection={setOpenSection}
-        >
+          {/* <DashboardLink href="/inventory/view-inventory" icon="📑" label="View Inventory" /> */}
           <DashboardLink
             href="/inventory/stock-view"
             icon="SH"
@@ -81,6 +73,27 @@ export default function Home() {
           />
         </Section>
 
+                <Section
+          id="reports"
+          title="Reports"
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+        >
+          <DashboardLink href="/profit-report" icon="📈" label="Profit Report" />
+          {/* <DashboardLink href="/reports/stockReport" icon="📊" label="Stock Report" /> */}
+          {/* <DashboardLink href="/stock-report" icon="🧾" label="Stock Report (Legacy)" /> */}
+          
+        </Section>
+<Section
+// icon="💸"
+ id ="Expenses"
+          title="Expenses"
+          
+          openSection={openSection}
+          setOpenSection={setOpenSection}>
+<DashboardLink href="/expenses/add-expense" icon="💸" label="Add Expense" />
+          <DashboardLink href="/expenses/view-expenses" icon="📄" label="View Expenses" />
+</Section>
         <Section
           id="customers"
           title="Customers"
@@ -94,18 +107,6 @@ export default function Home() {
           />
         </Section>
 
-        <Section
-          id="reports"
-          title="Reports"
-          openSection={openSection}
-          setOpenSection={setOpenSection}
-        >
-          <DashboardLink href="/profit-report" icon="📈" label="Profit Report" />
-          <DashboardLink href="/reports/stockReport" icon="📊" label="Stock Report" />
-          <DashboardLink href="/stock-report" icon="🧾" label="Stock Report (Legacy)" />
-          <DashboardLink href="/expenses/add-expense" icon="💸" label="Add Expense" />
-          <DashboardLink href="/expenses/view-expenses" icon="📄" label="View Expenses" />
-        </Section>
 
         <Section
           id="manufacturing"
@@ -148,6 +149,7 @@ function SummaryCard({
 
 function Section({
   id,
+  
   title,
   children,
   openSection,

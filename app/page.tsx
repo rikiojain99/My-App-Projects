@@ -1,18 +1,25 @@
 "use client";
 
 import { useAuth } from "@/components/AuthProvider";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import LowStockBanner from "@/components/LowStockBanner";
+
+type SummaryState = {
+  totalBills: number;
+  lowStockCount: number;
+  isLoading: boolean;
+};
 
 export default function Home() {
   const { authenticated, role, login } = useAuth();
 
   const [passkey, setPasskey] = useState("");
   const [error, setError] = useState("");
-
-  const [totalBills, setTotalBills] = useState(0);
-  const [lowStockCount, setLowStockCount] = useState(0);
+  const [summary, setSummary] = useState<SummaryState>({
+    totalBills: 0,
+    lowStockCount: 0,
+    isLoading: true,
+  });
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -23,16 +30,83 @@ export default function Home() {
   useEffect(() => {
     if (!authenticated) return;
 
-    fetch("/api/bills?page=1&limit=1")
-      .then((r) => r.json())
-      .then((d) => setTotalBills(d.totalBills || 0))
-      .catch(() => {});
+    const controller = new AbortController();
 
-    fetch("/api/reports/low-stock")
-      .then((r) => r.json())
-      .then((d) => setLowStockCount(d.length || 0))
-      .catch(() => {});
+    setSummary((prev) => ({ ...prev, isLoading: true }));
+
+    const fetchSummary = async () => {
+      try {
+        const [billsRes, lowStockRes] = await Promise.all([
+          fetch("/api/bills?page=1&limit=1", {
+            signal: controller.signal,
+          }),
+          fetch("/api/reports/low-stock", {
+            signal: controller.signal,
+          }),
+        ]);
+
+        const [billsData, lowStockData] = await Promise.all([
+          billsRes.ok ? billsRes.json() : null,
+          lowStockRes.ok ? lowStockRes.json() : null,
+        ]);
+
+        setSummary({
+          totalBills: Number(billsData?.totalBills || 0),
+          lowStockCount: Array.isArray(lowStockData)
+            ? lowStockData.length
+            : 0,
+          isLoading: false,
+        });
+      } catch (error: any) {
+        if (error?.name === "AbortError") return;
+
+        setSummary({
+          totalBills: 0,
+          lowStockCount: 0,
+          isLoading: false,
+        });
+      }
+    };
+
+    fetchSummary();
+
+    return () => controller.abort();
   }, [authenticated]);
+
+  const summaryCards = useMemo(
+    () => [
+      {
+        icon: "ðŸ§¾",
+        label: "Total Bills",
+        value: summary.totalBills,
+        isLoading: summary.isLoading,
+        bg: "bg-white",
+        textColor: "text-gray-900",
+      },
+      {
+        icon: "âš ï¸",
+        label: "Low Stock",
+        value: summary.lowStockCount,
+        isLoading: summary.isLoading,
+        bg:
+          !summary.isLoading && summary.lowStockCount > 0
+            ? "bg-red-50 border-red-200"
+            : "bg-white",
+        textColor:
+          !summary.isLoading && summary.lowStockCount > 0
+            ? "text-red-600"
+            : "text-gray-900",
+      },
+    ],
+    [summary]
+  );
+
+  const totalBills = summaryCards[0]?.isLoading
+    ? -1
+    : summaryCards[0]?.value ?? 0;
+  const lowStockCount = summaryCards[1]?.isLoading
+    ? -1
+    : summaryCards[1]?.value ?? 0;
 
   /* ---------------- LOGIN ---------------- */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,6 +172,8 @@ export default function Home() {
         {/* SUMMARY */}
         <div className="grid grid-cols-2 gap-4">
           <SummaryCard icon="🧾" label="Total Bills"
+            href="bills/view-bills"
+          
           value={totalBills} />
           <SummaryCard 
             icon="⚠️" 
@@ -105,10 +181,10 @@ export default function Home() {
             value={lowStockCount} 
             bg={lowStockCount > 0 ? "bg-red-50 border-red-200" : "bg-white"}
             textColor={lowStockCount > 0 ? "text-red-600" : "text-gray-900"}
+            href="/inventory/low-stock"
           />
         </div>
 
-        <LowStockBanner />
 
         {/* BILLS */}
         <Section
@@ -133,7 +209,7 @@ export default function Home() {
           <DashboardLink href="/inventory/add-stock" icon="➕" label="Add Stock" />
           <DashboardLink href="/inventory/stock-view" icon="📦" label="View Stock" />
           <DashboardLink href="/inventory/stock-holdings" icon="📊" label="Available Stock" />
-          <DashboardLink href="/inventory/opening-stock" icon="🗂️" label="Opening Stock" />
+          {/* <DashboardLink href="/inventory/opening-stock" icon="🗂️" label="Opening Stock" /> */}
         </Section>
 
         {/* MANUFACTURING */}
@@ -156,31 +232,52 @@ export default function Home() {
    COMPONENTS
 ================================================= */
 
-function SummaryCard({
+const SummaryCard = memo(function SummaryCard({
   icon,
   label,
   value,
+  href,
   bg = "bg-white",
-  textColor = "text-gray-900"
+  textColor = "text-gray-900",
 }: {
   icon: string;
   label: string;
   value: number;
+  href?: string;
   bg?: string;
   textColor?: string;
 }) {
-  return (
-    <div className={`${bg} border rounded-2xl p-5 text-center shadow-sm flex flex-col justify-between h-18`}>
-        <div className="text-xs text-gray-500 font-medium uppercase tracking-wide"> 
-      <span className="text-2xl">{icon}</span> {label} 
-         <span className={`text-2xl p-5 font-bold ${textColor}`}>{value}</span>
-      
-      </div>
+  const isLoading = value < 0;
 
-      
+  const cardContent = (
+    <div
+      className={`${bg} border rounded-2xl p-5 text-center shadow-sm flex min-h-\[112px\] flex-col justify-between transition-all ${
+        href ? "cursor-pointer hover:-translate-y-0.5 active:scale-[0.98]" : ""
+      }`}
+    >
+      <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+        <span className="text-2xl">{icon}</span> {label}
+      </div>
+      <div className="mt-3">
+        {isLoading ? (
+          <div className="mx-auto h-8 w-16 animate-pulse rounded-lg bg-gray-200" />
+        ) : (
+          <span className={`text-2xl font-bold ${textColor}`}>{value}</span>
+        )}
+      </div>
     </div>
   );
-}
+
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return cardContent;
+});
 
 function Section({
   id,

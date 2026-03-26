@@ -25,6 +25,18 @@ type PaymentMode = "cash" | "upi" | "split";
 const roundMoney = (value: number) =>
   Math.round((value + Number.EPSILON) * 100) / 100;
 
+const parseIntegerInput = (value: string) => {
+  const digitsOnly = value.replace(/\D/g, "");
+  return digitsOnly === "" ? 0 : Number(digitsOnly);
+};
+
+const parseMoneyInput = (value: string) => {
+  const normalized = value.replace(/[^0-9.]/g, "");
+  const [whole = "", ...rest] = normalized.split(".");
+  const merged = rest.length > 0 ? `${whole}.${rest.join("")}` : whole;
+  return merged === "" ? 0 : roundMoney(Number(merged));
+};
+
 const isSameAmount = (a: number, b: number) =>
   Math.abs(roundMoney(a) - roundMoney(b)) < 0.01;
 
@@ -66,6 +78,7 @@ export default function AddBill() {
     1: true,
     2: true,
   });
+  const qtyRefs = useRef<(HTMLInputElement | null)[]>([]);
   const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [savedBillData, setSavedBillData] = useState<any | null>(
@@ -154,35 +167,43 @@ export default function AddBill() {
   ) => {
     const { name, value } = e.target;
     const newItems = [...items];
+    const nextItem = { ...newItems[index] };
 
     if (name === "name") {
-      newItems[index].name = value;
+      nextItem.name = value;
     }
 
-    if (name === "qty" || name === "rate") {
-      const digitsOnly = value.replace(/\D/g, "");
-      const numericValue =
-        digitsOnly === "" ? 0 : Number(digitsOnly);
-
-      if (name === "qty") newItems[index].qty = numericValue;
-      if (name === "rate") newItems[index].rate = numericValue;
+    if (name === "qty" || name === "rate" || name === "total") {
+      if (name === "qty") nextItem.qty = parseIntegerInput(value);
+      if (name === "rate") nextItem.rate = parseMoneyInput(value);
+      if (name === "total") nextItem.total = parseMoneyInput(value);
     }
 
-    newItems[index].total = roundMoney(
-      newItems[index].qty * newItems[index].rate
-    );
+    if (name === "total") {
+      nextItem.rate =
+        nextItem.qty > 0
+          ? roundMoney(nextItem.total / nextItem.qty)
+          : 0;
+      nextItem.total = roundMoney(nextItem.total);
+    } else {
+      nextItem.total = roundMoney(
+        nextItem.qty * nextItem.rate
+      );
+    }
 
+    newItems[index] = nextItem;
     setItems(newItems);
   };
 
   const addItem = () => {
+    const nextIndex = items.length;
     setItems([
       ...items,
       { name: "", qty: 0, rate: 0, total: 0 },
     ]);
 
     setTimeout(() => {
-      itemRefs.current[itemRefs.current.length - 1]?.focus();
+      qtyRefs.current[nextIndex]?.focus();
     }, 0);
   };
 
@@ -395,6 +416,7 @@ export default function AddBill() {
           toggle={() =>
             setExpanded((prev) => ({ ...prev, 2: !prev[2] }))
           }
+          qtyRefs={qtyRefs}
           itemRefs={itemRefs}
           onItemChange={handleItemChange}
           onAddItem={addItem}

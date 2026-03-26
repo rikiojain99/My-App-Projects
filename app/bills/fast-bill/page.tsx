@@ -17,6 +17,21 @@ type Item = {
 
 type PaymentMode = "cash" | "upi" | "split";
 
+const roundMoney = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100;
+
+const parseIntegerInput = (value: string) => {
+  const digitsOnly = value.replace(/\D/g, "");
+  return digitsOnly === "" ? 0 : Number(digitsOnly);
+};
+
+const parseMoneyInput = (value: string) => {
+  const normalized = value.replace(/[^0-9.]/g, "");
+  const [whole = "", ...rest] = normalized.split(".");
+  const merged = rest.length > 0 ? `${whole}.${rest.join("")}` : whole;
+  return merged === "" ? 0 : roundMoney(Number(merged));
+};
+
 export default function FastBill() {
   const [items, setItems] = useState<Item[]>([
     { name: "", qty: 1, rate: 0, total: 0 },
@@ -47,17 +62,21 @@ export default function FastBill() {
   const [upiId, setUpiId] = useState("");
   const [upiAccount, setUpiAccount] = useState("");
 
+  const qtyRefs = useRef<(HTMLInputElement | null)[]>([]);
   const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   /* ================= TOTAL ================= */
 
   const grandTotal = useMemo(
-    () => items.reduce((sum, item) => sum + (item.total || 0), 0),
+    () =>
+      roundMoney(
+        items.reduce((sum, item) => sum + Number(item.total || 0), 0)
+      ),
     [items]
   );
 
   const finalTotal = useMemo(
-    () => Math.max(grandTotal - discount, 0),
+    () => Math.max(roundMoney(grandTotal - discount), 0),
     [grandTotal, discount]
   );
 
@@ -96,26 +115,41 @@ export default function FastBill() {
     const { name, value } = e.target;
 
     const updated = [...items];
+    const nextItem = { ...updated[index] };
 
-    if (name === "name") updated[index].name = value;
-    if (name === "qty") updated[index].qty = Number(value) || 0;
-    if (name === "rate") updated[index].rate = Number(value) || 0;
+    if (name === "name") nextItem.name = value;
+    if (name === "qty" || name === "rate" || name === "total") {
+      if (name === "qty") nextItem.qty = parseIntegerInput(value);
+      if (name === "rate") nextItem.rate = parseMoneyInput(value);
+      if (name === "total") nextItem.total = parseMoneyInput(value);
+    }
 
-    updated[index].total =
-      updated[index].qty * updated[index].rate;
+    if (name === "total") {
+      nextItem.rate =
+        nextItem.qty > 0
+          ? roundMoney(nextItem.total / nextItem.qty)
+          : 0;
+      nextItem.total = roundMoney(nextItem.total);
+    } else {
+      nextItem.total = roundMoney(
+        nextItem.qty * nextItem.rate
+      );
+    }
 
+    updated[index] = nextItem;
     setItems(updated);
   };
 
   const addItem = () => {
+    const nextIndex = items.length;
     setItems([
       ...items,
       { name: "", qty: 1, rate: 0, total: 0 },
     ]);
 
     setTimeout(() => {
-      itemRefs.current[items.length]?.focus();
-    }, 50);
+      qtyRefs.current[nextIndex]?.focus();
+    }, 0);
   };
 
   const removeItem = (index: number) =>
@@ -219,6 +253,7 @@ export default function FastBill() {
           items={items}
           expanded={expanded}
           toggle={() => setExpanded((p) => !p)}
+          qtyRefs={qtyRefs}
           itemRefs={itemRefs}
           onItemChange={handleItemChange}
           onAddItem={addItem}

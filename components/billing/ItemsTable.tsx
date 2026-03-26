@@ -4,8 +4,9 @@ import ItemNameInput from "@/components/billing/ItemNameInput";
 
 /* ================= TYPES ================= */
 type Item = {
-  name: string;
   qty: number;
+
+  name: string;
   rate: number;
   total: number;
 };
@@ -14,6 +15,7 @@ type Props = {
   items: Item[];
   expanded: boolean;
   toggle: () => void;
+  qtyRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
   itemRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
   onItemChange: (
     index: number,
@@ -28,6 +30,7 @@ export default function ItemsTable({
   items,
   expanded,
   toggle,
+  qtyRefs,
   itemRefs,
   onItemChange,
   onAddItem,
@@ -53,10 +56,9 @@ export default function ItemsTable({
 
       {/* ================= TABLE HEADER ================= */}
       {expanded && (
-        <div className="grid grid-cols-36 gap-1 text-sm font-medium text-gray-500 border-b pb-1 mb-1">
+        <div className="grid grid-cols-32 gap-2 text-sm font-medium text-gray-500 border-b pb-1 mb-1">
           <div className="col-span-2 text-center">N.</div>
           <div className="col-span-4 text-center">Qty</div>
-
           <div className="col-span-16">Item </div>
           <div className="col-span-4 text-center">Rate</div>
           <div className="col-span-4 text-center">Total</div>
@@ -69,14 +71,18 @@ export default function ItemsTable({
         items.map((item, i) => (
           <div
             key={i}
-            className="grid grid-cols-36 gap-1  items-center mb-2"
+            className="grid grid-cols-32 gap-1 items-center mb-2"
           >
             {/* Row Number */}
-            <div className="col-span-1 text-center font-medium text-gray-600">
+            <div className="col-span-2 text-center font-medium text-gray-600">
               {i + 1}
             </div>
-                        {/* Quantity */}
+
+            {/* Quantity */}
             <input
+              ref={(el) => {
+                qtyRefs.current[i] = el;
+              }}
               name="qty"
               type="text"
               inputMode="numeric"
@@ -85,17 +91,26 @@ export default function ItemsTable({
               onChange={(e) => onItemChange(i, e)}
               onKeyDown={(e) => {
                 if (e.ctrlKey || e.metaKey) return;
-                if (!/^\d$/.test(e.key) &&
-                    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"].includes(e.key)) {
+                if (
+                  !/^\d$/.test(e.key) &&
+                  ![
+                    "Backspace",
+                    "Delete",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Tab",
+                    "Home",
+                    "End",
+                  ].includes(e.key)
+                ) {
                   e.preventDefault();
                 }
               }}
-              className="col-span-5 border rounded-lg py-2 px-0 text-center focus:ring-2 focus:ring-blue-400 outline-none"
+              className="col-span-4 border rounded-lg py-2 px-0 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
 
-
             {/* Item Name */}
-            <div className="col-span-17">
+            <div className="col-span-16">
               <ItemNameInput
                 ref={(el) => {
                   itemRefs.current[i] = el;
@@ -106,32 +121,66 @@ export default function ItemsTable({
               />
             </div>
 
-
             {/* Rate */}
             <input
               name="rate"
               type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+              inputMode="decimal"
+              pattern="[0-9.]*"
               value={item.rate === 0 ? "" : String(item.rate)}
               onChange={(e) => onItemChange(i, e)}
               onKeyDown={(e) => {
                 if (e.ctrlKey || e.metaKey) return;
-                if (!/^\d$/.test(e.key) &&
-                    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"].includes(e.key)) {
+                if (
+                  !/^\d$/.test(e.key) &&
+                  ![
+                    ".",
+                    "Backspace",
+                    "Delete",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Tab",
+                    "Home",
+                    "End",
+                  ].includes(e.key)
+                ) {
                   e.preventDefault();
                 }
               }}
-              className="col-span-5 border rounded-lg py-2 px-0 text-center focus:ring-2 focus:ring-blue-400 outline-none"
+              className="col-span-4 border rounded-lg py-2 px-0 text-center focus:ring-2 focus:ring-blue-400 outline-none"
             />
 
             {/* Total */}
-            <div className="col-span-6 border rounded-lg py-2 px-0 text-center font-semibold bg-gray-50">
-               {item.total}
-            </div>
+            <input
+              name="total"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9.]*"
+              value={item.total === 0 ? "" : String(item.total)}
+              onChange={(e) => onItemChange(i, e)}
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return;
+                if (
+                  !/^\d$/.test(e.key) &&
+                  ![
+                    ".",
+                    "Backspace",
+                    "Delete",
+                    "ArrowLeft",
+                    "ArrowRight",
+                    "Tab",
+                    "Home",
+                    "End",
+                  ].includes(e.key)
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              className="col-span-4 border rounded-lg py-2 px-0 text-center font-semibold bg-gray-50 focus:ring-2 focus:ring-blue-400 outline-none"
+            />
 
             {/* Remove Button */}
-            <div className="col-span-1 text-center">
+            <div className="col-span-2 text-center">
               {items.length > 1 && (
                 <button
                   type="button"

@@ -15,6 +15,21 @@ type Item = {
   total: number;
 };
 
+const roundMoney = (value: number) =>
+  Math.round((value + Number.EPSILON) * 100) / 100;
+
+const parseIntegerInput = (value: string) => {
+  const digitsOnly = value.replace(/\D/g, "");
+  return digitsOnly === "" ? 0 : Number(digitsOnly);
+};
+
+const parseMoneyInput = (value: string) => {
+  const normalized = value.replace(/[^0-9.]/g, "");
+  const [whole = "", ...rest] = normalized.split(".");
+  const merged = rest.length > 0 ? `${whole}.${rest.join("")}` : whole;
+  return merged === "" ? 0 : roundMoney(Number(merged));
+};
+
 export default function VendorSalePage() {
   const [vendorName, setVendorName] = useState("");
   const [vendorMobile, setVendorMobile] = useState("");
@@ -30,6 +45,7 @@ export default function VendorSalePage() {
     { name: "", qty: 1, rate: 0, total: 0 },
   ]);
 
+  const qtyRefs = useRef<(HTMLInputElement | null)[]>([]);
   const itemRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [itemsExpanded, setItemsExpanded] = useState(true);
 
@@ -50,17 +66,20 @@ export default function VendorSalePage() {
   });
 
   const grandTotal = useMemo(
-    () => items.reduce((s, i) => s + i.total, 0),
+    () =>
+      roundMoney(
+        items.reduce((s, i) => s + Number(i.total || 0), 0)
+      ),
     [items]
   );
 
   const finalTotal = useMemo(
-    () => Math.max(grandTotal - discount, 0),
+    () => Math.max(roundMoney(grandTotal - discount), 0),
     [grandTotal, discount]
   );
 
   const creditAmount = useMemo(
-    () => Math.max(finalTotal - cashPaid, 0),
+    () => Math.max(roundMoney(finalTotal - cashPaid), 0),
     [finalTotal, cashPaid]
   );
 
@@ -114,21 +133,41 @@ export default function VendorSalePage() {
   ) => {
     const { name, value } = e.target;
     const updated = [...items];
+    const nextItem = { ...updated[index] };
 
-    if (name === "name") updated[index].name = value;
-    if (name === "qty") updated[index].qty = Number(value) || 0;
-    if (name === "rate") updated[index].rate = Number(value) || 0;
+    if (name === "name") nextItem.name = value;
+    if (name === "qty" || name === "rate" || name === "total") {
+      if (name === "qty") nextItem.qty = parseIntegerInput(value);
+      if (name === "rate") nextItem.rate = parseMoneyInput(value);
+      if (name === "total") nextItem.total = parseMoneyInput(value);
+    }
 
-    updated[index].total =
-      updated[index].qty * updated[index].rate;
+    if (name === "total") {
+      nextItem.rate =
+        nextItem.qty > 0
+          ? roundMoney(nextItem.total / nextItem.qty)
+          : 0;
+      nextItem.total = roundMoney(nextItem.total);
+    } else {
+      nextItem.total = roundMoney(
+        nextItem.qty * nextItem.rate
+      );
+    }
+
+    updated[index] = nextItem;
     setItems(updated);
   };
 
   const addItem = () => {
+    const nextIndex = items.length;
     setItems([
       ...items,
       { name: "", qty: 1, rate: 0, total: 0 },
     ]);
+
+    setTimeout(() => {
+      qtyRefs.current[nextIndex]?.focus();
+    }, 0);
   };
 
   const removeItem = (i: number) =>
@@ -284,6 +323,7 @@ export default function VendorSalePage() {
           items={items}
           expanded={itemsExpanded}
           toggle={() => setItemsExpanded((p) => !p)}
+          qtyRefs={qtyRefs}
           itemRefs={itemRefs}
           onItemChange={handleItemChange}
           onAddItem={addItem}
