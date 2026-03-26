@@ -19,6 +19,11 @@ type NormalizedBillItem = {
 type NormalizedCreateBillBody = {
   billNo: string;
   mobile: string;
+  customer?: {
+    name: string;
+    type: string;
+    city: string;
+  };
   items: NormalizedBillItem[];
   grandTotal: number;
   discount: number;
@@ -152,12 +157,21 @@ const normalizePayment = ({
 const normalizeCreateBillBody = (body: any): NormalizedCreateBillBody => {
   const billNo = String(body?.billNo || "").trim();
   const mobile = String(body?.mobile || "").trim();
+  const customerName = String(body?.customer?.name || "").trim();
+  const customerType = String(body?.customer?.type || "").trim();
+  const customerCity = String(body?.customer?.city || "").trim();
 
   if (!billNo) {
     throw new Error("Bill number required");
   }
   if (!/^\d{10}$/.test(mobile)) {
     throw new Error("Valid customer mobile required");
+  }
+  if (
+    body?.customer !== undefined &&
+    (!customerName || !customerType)
+  ) {
+    throw new Error("Customer name and type are required");
   }
 
   const items = normalizeItems(body?.items);
@@ -204,6 +218,14 @@ const normalizeCreateBillBody = (body: any): NormalizedCreateBillBody => {
   return {
     billNo,
     mobile,
+    customer:
+      body?.customer !== undefined
+        ? {
+            name: customerName,
+            type: customerType,
+            city: customerCity,
+          }
+        : undefined,
     items,
     grandTotal: computedGrandTotal,
     discount,

@@ -437,16 +437,11 @@ export default function CustomerDetailsPage() {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
-                  Customers
-                </p>
-                <h1 className="text-3xl font-bold tracking-tight">
+                
+                <h1 className="text-xl font-bold tracking-tight">
                   Customer Details Manager
                 </h1>
-                <p className="max-w-2xl text-sm text-slate-600">
-                  See customer details, check recent bills, and update
-                  customer information from one page.
-                </p>
+                
               </div>
 
               <button
@@ -459,30 +454,30 @@ export default function CustomerDetailsPage() {
             </div>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-3">
+          <section className="grid gap-4 grid-cols-3">
             <MetricCard
               label="Customers"
               value={String(totals.customerCount)}
-              caption="Customers in current view"
+              // caption=""
             />
             <MetricCard
               label="Bills"
               value={String(totals.billCount)}
-              caption="Linked bill count"
+              // caption=""
             />
             <MetricCard
               label="Total Spent"
               value={formatINR(totals.totalSpent)}
-              caption="Customer billing total"
+              // caption=""
             />
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
             <div>
               <h2 className="text-lg font-semibold">Search customers</h2>
-              <p className="text-sm text-slate-500">
+              {/* <p className="text-sm text-slate-500">
                 Search by name, mobile, city, or type.
-              </p>
+              </p> */}
             </div>
 
             <input
@@ -533,14 +528,23 @@ export default function CustomerDetailsPage() {
                     <div className="grid gap-4 p-5 lg:grid-cols-[2fr_1fr_auto] lg:items-center">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
+                           <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                            {customer.billCount || "NO bills"}
+                            </span>
                           <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-                            {customer.name}
+                            {customer.name || "No name"}
                           </span>
+                          
+                            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                            {customer.city || "No city"}
+
+                            </span>
+                          
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                            {customer.mobile}
+                            {customer.mobile || "No mobile"}
                           </span>
                           <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                            {customer.type}
+                            {customer.type || "No type"}
                           </span>
                           <span
                             className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -554,17 +558,9 @@ export default function CustomerDetailsPage() {
                         </div>
 
                         <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-3">
+                          
                           <div>
-                            <span className="font-medium text-slate-900">
-                              City:
-                            </span>{" "}
-                            {customer.city || "-"}
-                          </div>
-                          <div>
-                            <span className="font-medium text-slate-900">
-                              Bills:
-                            </span>{" "}
-                            {customer.billCount || 0}
+                          
                           </div>
                           <div>
                             <span className="font-medium text-slate-900">
@@ -583,7 +579,7 @@ export default function CustomerDetailsPage() {
                         <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
                           Total Spent
                         </div>
-                        <div className="text-2xl font-bold">
+                        <div className="text-xl font-bold">
                           {formatINR(customer.totalSpent || 0)}
                         </div>
                       </div>
@@ -826,19 +822,19 @@ export default function CustomerDetailsPage() {
 function MetricCard({
   label,
   value,
-  caption,
+  // caption,
 }: {
   label: string;
   value: string;
-  caption: string;
+  // caption: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="text-sm font-medium text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-bold text-slate-900">
+      <div className="mt-2 text-xl font-bold text-slate-900">
         {value}
       </div>
-      <div className="mt-1 text-xs text-slate-400">{caption}</div>
+      {/* <div className="mt-1 text-xs text-slate-400">{caption}</div> */}
     </div>
   );
 }

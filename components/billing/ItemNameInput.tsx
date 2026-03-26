@@ -174,9 +174,10 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
           if (reqId !== stockReqId.current) return;
 
           setStockQty(
-            typeof data?.availableQty === "number"
+            data?.matched === true &&
+              typeof data?.availableQty === "number"
               ? data.availableQty
-              : 0
+              : null
           );
         } catch {
           if (reqId === stockReqId.current) {
@@ -300,7 +301,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
             role="option"
             aria-selected={activeIndex === suggestionIndex}
             className={`cursor-pointer
-              px-1 py-1 text-lg sm:text-sm sm:px-2 sm:py-3  
+              px-1 py-1 text-lg sm:text-sm sm:px-2 sm:py-3 
               transition
               ${activeIndex === suggestionIndex
                 ? "bg-sky-100 text-sky-900"
@@ -320,7 +321,7 @@ const ItemNameInput = forwardRef<HTMLInputElement, Props>(
     block
     overflow-scroll
     whitespace-nowrap
-    sm:truncate sm:overflow-hidden
+    sm:truncate sm:overflow
     scrollbar-hide
   "
 >

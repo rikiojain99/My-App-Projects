@@ -286,32 +286,17 @@ export default function AddBill() {
     });
 
     try {
-      const customerRes = await fetch("/api/customers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...customer,
-          mobile: normalizedMobile,
-        }),
-      });
-
-      if (!customerRes.ok) {
-        const customerErr = await customerRes
-          .json()
-          .catch(() => ({}));
-        showError(
-          customerErr?.error ||
-            "Failed to save customer details"
-        );
-        return false;
-      }
-
       const res = await fetch("/api/bills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billNo,
           mobile: normalizedMobile,
+          customer: {
+            name: customer.name.trim(),
+            type: customer.type.trim(),
+            city: customer.city.trim(),
+          },
           items: validItems,
           grandTotal: computedGrandTotal,
           discount: safeDiscount,

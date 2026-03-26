@@ -13,6 +13,7 @@ export async function createBill(
 ) {
   const {
     mobile,
+    customer: customerInput,
     items,
     grandTotal,
     discount,
@@ -25,9 +26,25 @@ export async function createBill(
     upiAccount,
   } = body;
 
-  const customer = await Customer.findOne({ mobile }).session(
-    session || null
-  );
+  const customer = customerInput
+    ? await Customer.findOneAndUpdate(
+        { mobile },
+        {
+          $setOnInsert: {
+            mobile,
+            name: customerInput.name,
+            type: customerInput.type,
+            city: customerInput.city,
+          },
+        },
+        {
+          new: true,
+          upsert: true,
+          session,
+          setDefaultsOnInsert: true,
+        }
+      )
+    : await Customer.findOne({ mobile }).session(session || null);
 
   if (!customer) {
     throw new Error("Customer not found");
