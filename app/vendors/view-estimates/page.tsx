@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SaveStatusPopup, {
   type SavePopupStatus,
@@ -41,6 +41,14 @@ type VendorSale = {
 };
 
 export default function ViewVendorEstimatesPage() {
+  return (
+    <Suspense fallback={<ViewVendorEstimatesFallback />}>
+      <ViewVendorEstimatesContent />
+    </Suspense>
+  );
+}
+
+function ViewVendorEstimatesContent() {
   const searchParams = useSearchParams();
   const vendorId = useMemo(
     () => searchParams.get("vendorId")?.trim() || "",
@@ -382,6 +390,28 @@ export default function ViewVendorEstimatesPage() {
           message={popup.message}
           onClose={() => setPopup((current) => ({ ...current, open: false }))}
         />
+      </div>
+    </ProtectedRoute>
+  );
+}
+
+function ViewVendorEstimatesFallback() {
+  return (
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-100 pb-24">
+        <div className="mx-auto max-w-4xl space-y-4 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Vendor Estimates
+              </h1>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+            Loading vendor estimates...
+          </div>
+        </div>
       </div>
     </ProtectedRoute>
   );
