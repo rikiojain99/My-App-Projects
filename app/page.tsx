@@ -23,7 +23,7 @@ export default function Home() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 🔥 Only one section open
+  // Only one section open
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   /* ---------------- FETCH COUNTS ---------------- */
@@ -76,15 +76,15 @@ export default function Home() {
   const summaryCards = useMemo(
     () => [
       {
-        icon: "ðŸ§¾",
-        label: "Total Bills",
+        icon: "ES",
+        label: "Total Estimates",
         value: summary.totalBills,
         isLoading: summary.isLoading,
         bg: "bg-white",
         textColor: "text-gray-900",
       },
       {
-        icon: "âš ï¸",
+        icon: "LS",
         label: "Low Stock",
         value: summary.lowStockCount,
         isLoading: summary.isLoading,
@@ -139,7 +139,7 @@ export default function Home() {
               value={passkey}
               onChange={(e) => setPasskey(e.target.value)}
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-center text-lg tracking-widest"
-              placeholder="••••"
+              placeholder="****"
               required
             />
             <button
@@ -164,40 +164,35 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 pb-24">
       <div className="max-w-md mx-auto space-y-6">
-
         <h1 className="text-2xl font-bold text-center text-gray-800">
           Welcome, {role}
         </h1>
 
         {/* SUMMARY */}
         <div className="grid grid-cols-2 gap-4">
-          <SummaryCard icon="🧾" label="Total Bills"
-            href="bills/view-bills"
-          
-          value={totalBills} />
-          <SummaryCard 
-            icon="⚠️" 
-            label="Low Stock" 
-            value={lowStockCount} 
+          <SummaryCard icon="🧾" label="Total Estimates" href="bills/view-bills" value={totalBills} />
+          <SummaryCard
+            icon="⚠️"
+            label="Low Stock"
+            value={lowStockCount}
             bg={lowStockCount > 0 ? "bg-red-50 border-red-200" : "bg-white"}
             textColor={lowStockCount > 0 ? "text-red-600" : "text-gray-900"}
             href="/inventory/low-stock"
           />
         </div>
 
-
-        {/* BILLS */}
+        {/* ESTIMATES */}
         <Section
           id="bills"
-          title="Bills"
+          title="Estimates"
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          <DashboardLink href="/bills/fast-bill" icon="⚡" label="Fast Bill" />
-          <DashboardLink href="/bills/add-bill" icon="🧾" label="Add Bill" />
-          <DashboardLink href="/bills/view-bills" icon="📂" label="View Bills" />
+          <DashboardLink href="/bills/fast-bill" icon="⚡" label="Fast Estimate" />
+          <DashboardLink href="/bills/add-bill" icon="🧾" label="Add Estimate" />
+          <DashboardLink href="/bills/view-bills" icon="📂" label="View Estimates" />
         </Section>
-      
+
         {/* INVENTORY */}
         <Section
           id="inventory"
@@ -205,7 +200,6 @@ export default function Home() {
           openSection={openSection}
           setOpenSection={setOpenSection}
         >
-          {/* Clean route name */}
           <DashboardLink href="/inventory/add-stock" icon="➕" label="Add Stock" />
           <DashboardLink href="/inventory/stock-view" icon="📦" label="View Stock" />
           <DashboardLink href="/inventory/stock-holdings" icon="📊" label="Available Stock" />
@@ -222,7 +216,6 @@ export default function Home() {
           <DashboardLink href="/manufacturing/create" icon="🏭" label="Create Items" />
           <DashboardLink href="/manufacturing/history" icon="📂" label="View History" />
         </Section>
-
       </div>
     </div>
   );
@@ -251,7 +244,7 @@ const SummaryCard = memo(function SummaryCard({
 
   const cardContent = (
     <div
-      className={`${bg} border rounded-2xl p-5 text-center shadow-sm flex min-h-\[112px\] flex-col justify-between transition-all ${
+      className={`${bg} border rounded-2xl p-5 text-center shadow-sm flex min-h-[112px] flex-col justify-between transition-all ${
         href ? "cursor-pointer hover:-translate-y-0.5 active:scale-[0.98]" : ""
       }`}
     >
@@ -300,20 +293,18 @@ function Section({
 
   return (
     <div className="bg-white border rounded-2xl shadow-sm overflow-hidden transition-all">
-      {/* HEADER */}
       <button
         onClick={toggle}
-        className={`w-full flex justify-between items-center px-5 py-4 font-semibold text-gray-700 active:bg-gray-50 transition-colors ${isOpen ? 'bg-gray-50' : 'bg-white'}`}
+        className={`w-full flex justify-between items-center px-5 py-4 font-semibold text-gray-700 active:bg-gray-50 transition-colors ${isOpen ? "bg-gray-50" : "bg-white"}`}
       >
         <span>{title}</span>
         <span
           className={`transition-transform duration-300 text-gray-400 ${isOpen ? "rotate-180" : ""}`}
         >
-          ▼
+          v
         </span>
       </button>
 
-      {/* BODY */}
       <div
         className={`grid transition-all duration-300 ease-in-out ${
           isOpen
@@ -322,9 +313,7 @@ function Section({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-3 pb-4 space-y-1">
-            {children}
-          </div>
+          <div className="px-3 pb-4 space-y-1">{children}</div>
         </div>
       </div>
     </div>
@@ -349,8 +338,7 @@ function DashboardLink({
         <span className="text-lg w-6 text-center">{icon}</span>
         <span className="font-medium">{label}</span>
       </span>
-      <span className="text-gray-300 text-xl">›</span>
+      <span className="text-gray-300 text-xl">&gt;</span>
     </Link>
   );
 }
-

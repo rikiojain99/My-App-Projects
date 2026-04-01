@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Item from "@/models/Item";
 import ItemStock from "@/models/ItemStock";
+import VendorSale from "@/models/VendorSale";
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -40,6 +41,66 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const search = String(searchParams.get("search") || "").trim();
+    const recent = searchParams.get("recent") === "1";
+    const limit = Math.min(
+      Math.max(Number(searchParams.get("limit") || 8), 1),
+      25
+    );
+
+    if (recent) {
+      const recentItems = await VendorSale.aggregate([
+        { $unwind: "$items" },
+        {
+          $match: {
+            "items.name": {
+              $type: "string",
+              $ne: "",
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$items.name",
+            name: { $first: "$items.name" },
+            count: { $sum: 1 },
+            lastUsedAt: { $max: "$createdAt" },
+          },
+        },
+        {
+          $sort: {
+            lastUsedAt: -1,
+            count: -1,
+          },
+        },
+        { $limit: limit },
+      ]);
+
+      if (recentItems.length > 0) {
+        return NextResponse.json(
+          recentItems.map((item, index) => ({
+            _id: `recent-${index}-${String(item.name).trim()}`,
+            name: String(item.name).trim(),
+          }))
+        );
+      }
+
+      const stockItems = await ItemStock.find()
+        .select("itemName")
+        .sort({ lastUpdated: -1, createdAt: -1 })
+        .limit(limit)
+        .lean();
+
+      return NextResponse.json(
+        stockItems
+          .map((item: any, index: number) => ({
+            _id: `stock-recent-${index}-${String(
+              item.itemName || ""
+            ).trim()}`,
+            name: String(item.itemName || "").trim(),
+          }))
+          .filter((item) => item.name.length > 0)
+      );
+    }
 
     if (!search) {
       return NextResponse.json([]);

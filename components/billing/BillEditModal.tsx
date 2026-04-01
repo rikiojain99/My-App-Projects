@@ -202,7 +202,7 @@ export default function BillEditModal({
     setSavePopup({
       open: true,
       status: "saving",
-      title: "Updating bill",
+      title: "Updating estimate",
       message: "Please wait while we save changes.",
     });
 
@@ -233,7 +233,7 @@ export default function BillEditModal({
           open: true,
           status: "error",
           title: "Update failed",
-          message: err?.error || "Failed to update bill",
+          message: err?.error || "Failed to update estimate",
         });
         return;
       }
@@ -241,15 +241,15 @@ export default function BillEditModal({
       setSavePopup({
         open: true,
         status: "success",
-        title: "Bill updated",
-        message: "Bill details updated successfully.",
+        title: "Estimate updated",
+        message: "Estimate details updated successfully.",
       });
     } catch {
       setSavePopup({
         open: true,
         status: "error",
         title: "Update failed",
-        message: "Failed to update bill",
+        message: "Failed to update estimate",
       });
     } finally {
       setLoading(false);
@@ -259,7 +259,7 @@ export default function BillEditModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-xl bg-white p-5">
-        <h2 className="text-lg font-semibold">Edit Bill</h2>
+        <h2 className="text-lg font-semibold">Edit Estimate</h2>
 
         {/* ================= CUSTOMER ================= */}
         {["name", "mobile", "city", "type"].map((field) => (

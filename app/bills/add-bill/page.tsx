@@ -302,8 +302,8 @@ export default function AddBill() {
     setSavePopup({
       open: true,
       status: "saving",
-      title: "Saving bill",
-      message: "Please wait while we save bill data.",
+      title: "Saving estimate",
+      message: "Please wait while we save estimate data.",
     });
 
     try {
@@ -333,7 +333,7 @@ export default function AddBill() {
 
       if (!res.ok) {
         const err = await res.json();
-        showError(err?.error || "Failed to save bill");
+        showError(err?.error || "Failed to save estimate");
         return false;
       }
 
@@ -381,7 +381,7 @@ export default function AddBill() {
   return (
     <ProtectedRoute>
       <div className="max-w-5xl mx-auto bg-white border rounded-xl p-4 space-y-6">
-        <h1 className="text-3xl font-bold text-black">Add Bill</h1>
+        <h1 className="text-3xl font-bold text-black">Add Estimate</h1>
 
         <CustomerSection
           customer={customer}
@@ -405,7 +405,7 @@ export default function AddBill() {
               onClick={() => setSelectedBill("LIST")}
               className="text-sm font-medium text-blue-700"
             >
-              Previous Bills ({previousBills.length})
+              Previous Estimates ({previousBills.length})
             </button>
           </div>
         )}
@@ -462,7 +462,7 @@ export default function AddBill() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-sm rounded-xl p-6 space-y-4 text-center">
             <h2 className="text-lg font-semibold text-green-600">
-              Bill Saved Successfully
+              Estimate Saved Successfully
             </h2>
 
             <button

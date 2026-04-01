@@ -24,15 +24,9 @@ export default function QuickStatsBar() {
 
   const Card = ({ title, data }: any) => (
     <div className="bg-white rounded-xl shadow-sm border p-4">
-      <div className="text-xs text-gray-500">
-        {title}
-      </div>
-      <div className="text-lg font-bold">
-        ₹ {data.total || 0}
-      </div>
-      <div className="text-xs text-gray-400">
-        {data.count || 0} bills
-      </div>
+      <div className="text-xs text-gray-500">{title}</div>
+      <div className="text-lg font-bold">Rs. {data.total || 0}</div>
+      <div className="text-xs text-gray-400">{data.count || 0} estimates</div>
     </div>
   );
 
@@ -45,4 +39,3 @@ export default function QuickStatsBar() {
     </div>
   );
 }
-    

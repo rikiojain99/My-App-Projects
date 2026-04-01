@@ -3,6 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IVendorPayment extends Document {
   vendorId: mongoose.Types.ObjectId;
   amount: number;
+  previousBalance?: number;
+  newBalance?: number;
   note?: string;
   createdAt: Date;
 }
@@ -17,6 +19,12 @@ const VendorPaymentSchema = new Schema<IVendorPayment>(
     amount: {
       type: Number,
       required: true,
+    },
+    previousBalance: {
+      type: Number,
+    },
+    newBalance: {
+      type: Number,
     },
     note: {
       type: String,

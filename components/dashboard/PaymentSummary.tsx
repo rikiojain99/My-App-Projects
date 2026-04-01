@@ -27,19 +27,13 @@ export default function PaymentSummary() {
     count,
   }: any) => (
     <div className="bg-white border rounded-xl p-4 shadow-sm">
-      <div className="text-xs text-gray-500">
-        {title}
+      <div className="text-xs text-gray-500">{title}</div>
+
+      <div className={`text-lg font-bold mt-1 ${color}`}>
+        Rs. {value}
       </div>
 
-      <div
-        className={`text-lg font-bold mt-1 ${color}`}
-      >
-        ₹ {value}
-      </div>
-
-      <div className="text-xs text-gray-400 mt-1">
-        {count} bills
-      </div>
+      <div className="text-xs text-gray-400 mt-1">{count} estimates</div>
     </div>
   );
 

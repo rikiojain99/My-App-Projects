@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import VendorPayment from "@/models/VendorPayment";
+import Vendor from "@/models/Vendor";
+import { getVendorOutstanding } from "@/lib/vendorBalance";
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
 
-    const { vendorId, amount, note } =
-      await req.json();
+    const { vendorId, amount, note } = await req.json();
 
     if (!vendorId || !amount) {
       return NextResponse.json(
@@ -22,6 +23,11 @@ export async function POST(req: Request) {
         amount,
         note,
       });
+
+    const outstanding = await getVendorOutstanding(vendorId);
+    await Vendor.findByIdAndUpdate(vendorId, {
+      $set: { balance: outstanding },
+    });
 
     return NextResponse.json(
       payment,

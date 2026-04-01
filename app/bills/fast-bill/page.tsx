@@ -184,7 +184,7 @@ export default function FastBill() {
       setSavePopup({
         open: true,
         status: "saving",
-        title: "Saving fast bill",
+        title: "Saving fast estimate",
         message: "Please wait while we save data.",
       });
 
@@ -205,7 +205,7 @@ export default function FastBill() {
 
       if (!res.ok) {
         const err = await res.json();
-        const errMsg = err?.error || "Failed to save fast bill";
+        const errMsg = err?.error || "Failed to save fast estimate";
         setMessage(errMsg);
         setSavePopup({
           open: true,
@@ -216,11 +216,11 @@ export default function FastBill() {
         return;
       }
 
-      setMessage("Fast bill saved");
+      setMessage("Fast estimate saved");
       setSavePopup({
         open: true,
         status: "success",
-        title: "Fast bill saved",
+        title: "Fast estimate saved",
         message: "Data has been saved successfully.",
       });
 
@@ -245,7 +245,7 @@ export default function FastBill() {
   return (
     <ProtectedRoute>
       <div className="max-w-5xl mx-auto bg-white border rounded-xl p-6 space-y-6 shadow-sm">
-        <h1 className="text-2xl font-bold">Cash Bill</h1>
+        <h1 className="text-2xl font-bold">Cash Estimate</h1>
 
         {message && <p className="text-sm">{message}</p>}
 

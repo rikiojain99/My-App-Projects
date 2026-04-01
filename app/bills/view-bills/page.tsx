@@ -165,7 +165,7 @@ export default function ViewBills() {
           open: true,
           status: "error",
           title: "Load failed",
-          message: "Failed to fetch bills.",
+          message: "Failed to fetch estimates.",
         });
         return;
       }
@@ -196,7 +196,7 @@ export default function ViewBills() {
         open: true,
         status: "error",
         title: "Load failed",
-        message: "Unable to load bills right now.",
+        message: "Unable to load estimates right now.",
       });
     } finally {
       if (
@@ -271,7 +271,7 @@ export default function ViewBills() {
       <div className="max-w-3xl mx-auto p-4 space-y-4">
 
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">Bills</h1>
+          <h1 className="text-2xl font-bold">Estimates</h1>
           <button
             type="button"
             onClick={() => setShowFilters((prev) => !prev)}
@@ -344,7 +344,7 @@ export default function ViewBills() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-gray-200 bg-white p-3">
-            <p className="text-xs text-gray-500">Filtered Bills</p>
+            <p className="text-xs text-gray-500">Filtered Estimates</p>
             <p className="text-xl font-semibold text-gray-900">
               {filteredSummary.totalBills}
             </p>
@@ -380,7 +380,7 @@ export default function ViewBills() {
 
         {!hasMore && !loading && (
           <p className="text-center text-gray-400 text-sm">
-            No more bills
+            No more estimates
           </p>
         )}
       </div>

@@ -50,13 +50,12 @@ export default function PaymentModal({
   onSave,
   isSaving = false,
 }: Props) {
-
   const [localDiscount, setLocalDiscount] = useState(
     discount.toString()
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const upiAccounts = ["Vinay", "Chirag", "SJ","Others"];
+  const upiAccounts = ["Vinay", "Chirag", "SJ", "Others"];
   const numberKeys = [
     "Backspace",
     "Delete",
@@ -69,16 +68,12 @@ export default function PaymentModal({
   const isSameAmount = (a: number, b: number) =>
     Math.abs(a - b) < 0.01;
 
-  /* ================= SYNC DISCOUNT ================= */
-
   useEffect(() => {
     const num = Number(localDiscount);
     if (!isNaN(num)) {
       setDiscount(num);
     }
   }, [localDiscount]);
-
-  /* ================= AUTO PAYMENT ================= */
 
   useEffect(() => {
     if (paymentMode === "cash") {
@@ -96,8 +91,6 @@ export default function PaymentModal({
       setUpiAmount(0);
     }
   }, [paymentMode, finalTotal]);
-
-  /* ================= SPLIT LIVE ================= */
 
   useEffect(() => {
     if (paymentMode === "split") {
@@ -132,14 +125,9 @@ export default function PaymentModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl 
-                      max-h-[90vh] overflow-y-auto p-6 space-y-6">
-
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto p-6 space-y-6">
         <div className="text-center">
-          <h2 className="text-lg font-semibold">
-            Payment
-          </h2>
+          <h2 className="text-lg font-semibold">Payment</h2>
           <p className="text-xl font-bold">
             {customerName || "Walk-in Customer"}
           </p>
@@ -148,14 +136,13 @@ export default function PaymentModal({
         <div className="bg-gray-50 border rounded-xl p-4 text-center">
           <p className="text-sm text-gray-500">Final Amount</p>
           <p className="text-3xl font-bold text-green-600">
-            ₹ {finalTotal}
+            Rs. {finalTotal}
           </p>
         </div>
 
-        {/* DISCOUNT */}
         <div>
           <label className="text-sm font-medium block mb-1">
-            Discount (₹)
+            Discount (Rs.)
           </label>
           <input
             type="text"
@@ -176,7 +163,6 @@ export default function PaymentModal({
           />
         </div>
 
-        {/* PAYMENT MODE */}
         <div className="flex gap-2">
           {(["cash", "upi", "split"] as PaymentMode[]).map(
             (m) => (
@@ -196,7 +182,6 @@ export default function PaymentModal({
           )}
         </div>
 
-        {/* CASH */}
         {(paymentMode === "cash" ||
           paymentMode === "split") && (
           <input
@@ -221,13 +206,11 @@ export default function PaymentModal({
           />
         )}
 
-        {/* UPI */}
         {(paymentMode === "upi" ||
           paymentMode === "split") && (
           <div className="space-y-3">
-
             <div className="bg-gray-100 p-2 rounded-lg text-sm">
-              UPI Amount: ₹ {upiAmount}
+              UPI Amount: Rs. {upiAmount}
             </div>
 
             <select
@@ -279,21 +262,20 @@ export default function PaymentModal({
                 : "bg-gray-300 text-gray-500"
             }`}
           >
-            {saving ? "Saving..." : "Save Bill"}
+            {saving ? "Saving..." : "Save Estimate"}
           </button>
         </div>
 
         {saving && (
           <div className="space-y-2">
             <p className="text-xs text-gray-500 text-center">
-              Saving bill, please wait...
+              Saving estimate, please wait...
             </p>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
               <div className="h-full w-full bg-green-500 animate-pulse" />
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

@@ -3,14 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const HOME_ICON = String.fromCodePoint(0x1F3E0);
+const ESTIMATE_ICON = String.fromCodePoint(0x1F9FE);
+const STOCK_ICON = String.fromCodePoint(0x1F4E6);
+const BUSINESS_ICON = String.fromCodePoint(0x1F3E2);
+
 export default function BottomNav() {
   const pathname = usePathname();
 
   const tabs = [
-    { label: "Home", icon: "HM", path: "/" },
-    { label: "Bills", icon: "BL", path: "/bills/view-bills" },
-    { label: "Stock", icon: "ST", path: "/inventory/stock-view" },
-    { label: "Business", icon: "BZ", path: "/businessManagement/layout" },
+    { label: "Home", icon: HOME_ICON, path: "/" },
+    { label: "Estimates", icon: ESTIMATE_ICON, path: "/bills/view-bills" },
+    { label: "Stock", icon: STOCK_ICON, path: "/inventory/stock-view" },
+    { label: "Business", icon: BUSINESS_ICON, path: "/businessManagement/layout" },
   ];
 
   const isActivePath = (path: string) => {

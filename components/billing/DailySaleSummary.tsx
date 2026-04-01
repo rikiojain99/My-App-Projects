@@ -15,8 +15,6 @@ export default function DailySaleSummary({
 }: Props) {
   const [expanded, setExpanded] = useState(false);
 
-  /* ================= SAFE DATA EXTRACTION ================= */
-
   const totalAmount =
     dailySale.totalAmount ??
     dailySale.totalRevenue ??
@@ -32,8 +30,6 @@ export default function DailySaleSummary({
 
   const totalTransactions = entries.length;
 
-  /* ================= LAST 3 ENTRIES ================= */
-
   const lastThree = useMemo(() => {
     return [...entries]
       .reverse()
@@ -42,21 +38,14 @@ export default function DailySaleSummary({
 
   return (
     <div className="bg-white border rounded-2xl shadow-sm transition-all">
-
-      {/* ================= HEADER ================= */}
       <div className="flex justify-between items-center p-4">
-
         <div>
           <h2 className="font-semibold text-lg">
             Today's Fast Sales
-            <span className="ml-2  text-sm text-gray-500">
-              Bills ({totalTransactions})
+            <span className="ml-2 text-sm text-gray-500">
+              Estimates ({totalTransactions})
             </span>
           </h2>
-{/* 
-          <p className="text-sm font-semibold text-green-600">
-            ₹ {totalAmount}
-          </p> */}
         </div>
 
         <button
@@ -67,31 +56,14 @@ export default function DailySaleSummary({
         </button>
       </div>
 
-      {/* ================= EXPANDED SECTION ================= */}
       {expanded && (
         <div className="border-t px-4 py-4 space-y-5 bg-gray-50 rounded-b-2xl">
-
-          {/* SUMMARY GRID */}
           <div className="grid grid-cols-3 gap-4 text-sm">
-
-            <SummaryItem
-              label="Total Amount"
-              value={totalAmount}
-            />
-
-            <SummaryItem
-              label="Cash"
-              value={totalCash}
-            />
-
-            <SummaryItem
-              label="UPI"
-              value={totalUpi}
-            />
-
+            <SummaryItem label="Total Amount" value={totalAmount} />
+            <SummaryItem label="Cash" value={totalCash} />
+            <SummaryItem label="UPI" value={totalUpi} />
           </div>
 
-          {/* ================= LAST 3 TRANSACTIONS ================= */}
           {lastThree.length > 0 && (
             <div>
               <h3 className="text-sm font-medium mb-2">
@@ -105,9 +77,7 @@ export default function DailySaleSummary({
                       key={index}
                       className="flex justify-between bg-white border rounded-lg px-3 py-2 text-sm"
                     >
-                      <div>
-                        ₹ {entry.total}
-                      </div>
+                      <div>Rs. {entry.total}</div>
 
                       <div className="text-gray-500 text-xs">
                         {entry.items?.length || 0} items
@@ -119,7 +89,6 @@ export default function DailySaleSummary({
             </div>
           )}
 
-          {/* ================= CLOSE DAY BUTTON ================= */}
           <button
             onClick={onCloseDay}
             disabled={closing}
@@ -127,14 +96,11 @@ export default function DailySaleSummary({
           >
             {closing ? "Closing..." : "Close Day"}
           </button>
-
         </div>
       )}
     </div>
   );
 }
-
-/* ================= SMALL COMPONENT ================= */
 
 function SummaryItem({
   label,
@@ -145,12 +111,8 @@ function SummaryItem({
 }) {
   return (
     <div className="bg-white border rounded-xl p-3 text-center shadow-sm">
-      <div className="text-xs text-gray-500">
-        {label}
-      </div>
-      <div className="font-semibold text-lg mt-1">
-        ₹ {value}
-      </div>
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="font-semibold text-lg mt-1">Rs. {value}</div>
     </div>
   );
 }
