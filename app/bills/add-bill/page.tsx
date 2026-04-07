@@ -96,6 +96,165 @@ export default function AddBill() {
   const [upiAmount, setUpiAmount] = useState(0);
   const [upiId, setUpiId] = useState("");
 
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const BILL_DRAFT_STORAGE_KEY = "add-bill-draft";
+  const draftRef = useRef({
+    customer,
+    items,
+    billNo,
+    discount,
+    paymentMode,
+    cashAmount,
+    upiAmount,
+    upiId,
+    upiAccount,
+    expanded,
+  });
+  const draftPresentRef = useRef(false);
+
+  const isDraftPresent = useMemo(() => {
+    const hasCustomer = Object.values(customer).some(
+      (value) => value.trim().length > 0
+    );
+    const hasItems = items.some(
+      (item) =>
+        item.name.trim().length > 0 || item.qty > 0 || item.rate > 0
+    );
+    const hasPayment =
+      discount !== 0 ||
+      paymentMode !== "cash" ||
+      cashAmount !== 0 ||
+      upiAmount !== 0 ||
+      upiId.trim().length > 0 ||
+      upiAccount.trim().length > 0;
+
+    return hasCustomer || hasItems || hasPayment;
+  }, [customer, items, discount, paymentMode, cashAmount, upiAmount, upiId, upiAccount]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const restoreDraft = () => {
+      const raw = window.localStorage.getItem(BILL_DRAFT_STORAGE_KEY);
+      if (!raw) {
+        setDraftLoaded(true);
+        return;
+      }
+
+      try {
+        const data = JSON.parse(raw);
+        if (!data || typeof data !== "object") {
+          setDraftLoaded(true);
+          return;
+        }
+
+        setCustomer(
+          data.customer ?? {
+            name: "",
+            type: "",
+            city: "",
+            mobile: "",
+          }
+        );
+        setItems(
+          Array.isArray(data.items) && data.items.length > 0
+            ? data.items
+            : [{ name: "", qty: 0, rate: 0, total: 0 }]
+        );
+        setBillNo(data.billNo || generateBillNo());
+        setDiscount(Number(data.discount ?? 0));
+        setPaymentMode(data.paymentMode || "cash");
+        setCashAmount(Number(data.cashAmount ?? 0));
+        setUpiAmount(Number(data.upiAmount ?? 0));
+        setUpiId(data.upiId || "");
+        setUpiAccount(data.upiAccount || "");
+        setExpanded(data.expanded ?? { 1: true, 2: true });
+      } catch {
+        // ignore invalid draft data
+      } finally {
+        setDraftLoaded(true);
+      }
+    };
+
+    restoreDraft();
+    window.addEventListener("pageshow", restoreDraft);
+    return () => {
+      window.removeEventListener("pageshow", restoreDraft);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !draftLoaded) return;
+
+    const draft = {
+      customer,
+      items,
+      billNo,
+      discount,
+      paymentMode,
+      cashAmount,
+      upiAmount,
+      upiId,
+      upiAccount,
+      expanded,
+    };
+
+    draftRef.current = draft;
+    draftPresentRef.current = isDraftPresent;
+
+    const shouldSave =
+      isDraftPresent ||
+      (items.length === 1 && items[0].name === "" && items[0].qty === 0 && items[0].rate === 0);
+
+    if (!shouldSave) {
+      window.localStorage.removeItem(BILL_DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        BILL_DRAFT_STORAGE_KEY,
+        JSON.stringify(draft)
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [draftLoaded, customer, items, billNo, discount, paymentMode, cashAmount, upiAmount, upiId, upiAccount, expanded, isDraftPresent]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!draftPresentRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    const handlePageHide = () => {
+      if (!draftPresentRef.current) {
+        window.localStorage.removeItem(BILL_DRAFT_STORAGE_KEY);
+        return;
+      }
+
+      try {
+        window.localStorage.setItem(
+          BILL_DRAFT_STORAGE_KEY,
+          JSON.stringify(draftRef.current)
+        );
+      } catch {
+        // ignore storage errors
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, []);
+
   useEffect(() => {
     if (customer.mobile.length !== 10) {
       setPreviousBills([]);
@@ -132,9 +291,14 @@ export default function AddBill() {
     [items]
   );
 
+  const roundedGrandTotal = useMemo(
+    () => Math.round(grandTotal),
+    [grandTotal]
+  );
+
   const finalTotal = useMemo(
-    () => Math.max(roundMoney(grandTotal - discount), 0),
-    [grandTotal, discount]
+    () => Math.max(roundMoney(roundedGrandTotal - discount), 0),
+    [roundedGrandTotal, discount]
   );
 
   useEffect(() => {
@@ -350,6 +514,7 @@ export default function AddBill() {
         upiAmount,
       });
 
+      window.localStorage.removeItem(BILL_DRAFT_STORAGE_KEY);
       setShowPayment(false);
       setCustomer({ name: "", type: "", city: "", mobile: "" });
       setItems([{ name: "", qty: 0, rate: 0, total: 0 }]);
@@ -425,7 +590,7 @@ export default function AddBill() {
 
         <div className="flex justify-between bg-gray-50 border p-4 rounded-lg">
           <span className="font-semibold">Grand Total</span>
-          <span className="font-bold text-lg">Rs. {grandTotal}</span>
+          <span className="font-bold text-lg">Rs. {roundedGrandTotal}</span>
         </div>
 
         <button
